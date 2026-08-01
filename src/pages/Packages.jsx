@@ -1,10 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Package, Activity, Plus, Eye, Edit2, Trash2, Calendar, Users as UsersIcon, IndianRupee } from 'lucide-react';
+import { Search, Package, Activity, Plus, Eye, Edit2, Trash2, Calendar, Users as UsersIcon } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import ManagementTable from '../components/common/ManagementTable';
 import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
+
+const initialFormData = {
+  name: '',
+  min_employee_count: 1,
+  max_employee_count: 50,
+  monthly_price: '',
+  quarterly_price: '',
+  half_yearly_price: '',
+  yearly_price: '',
+  accept_periods: ['monthly'],
+  is_active: 1
+};
 
 const Packages = () => {
   const [packages, setPackages] = useState([]);
@@ -15,6 +27,13 @@ const Packages = () => {
   // Modal state
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formData, setFormData] = useState(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Delete Modal state
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const fetchPackages = async () => {
     if (isFetchingRef.current) return;
@@ -40,6 +59,121 @@ const Packages = () => {
   useEffect(() => {
     fetchPackages();
   }, []);
+
+  const handleOpenCreate = () => {
+    setSelectedPackage(null);
+    setFormData(initialFormData);
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEdit = (pkg) => {
+    setSelectedPackage(pkg);
+    setFormData({
+      name: pkg.name,
+      min_employee_count: pkg.min_employee_count,
+      max_employee_count: pkg.max_employee_count,
+      monthly_price: pkg.monthly_price,
+      quarterly_price: pkg.quarterly_price,
+      half_yearly_price: pkg.half_yearly_price,
+      yearly_price: pkg.yearly_price,
+      accept_periods: pkg.accept_periods || [],
+      is_active: pkg.is_active
+    });
+    setIsFormModalOpen(true);
+  };
+
+  const handleDeleteClick = (id) => {
+    setDeleteTargetId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    try {
+      const response = await apiCall(`/packages/${deleteTargetId}`, 'DELETE');
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Package deleted successfully');
+        fetchPackages();
+      } else {
+        toast.error(data.message || 'Failed to delete package');
+      }
+    } catch (error) {
+      toast.error('Error deleting package');
+    } finally {
+      setIsDeleteModalOpen(false);
+      setDeleteTargetId(null);
+    }
+  };
+
+  const handleToggleStatus = async (pkg) => {
+    try {
+      const payload = { ...pkg, is_active: pkg.is_active ? 0 : 1 };
+      // we need to remove some fields that shouldn't be sent or might cause issues, but based on API schema we can send full body for PUT
+      const response = await apiCall(`/packages/${pkg.id}`, 'PUT', {
+        name: pkg.name,
+        min_employee_count: pkg.min_employee_count,
+        max_employee_count: pkg.max_employee_count,
+        monthly_price: pkg.monthly_price,
+        quarterly_price: pkg.quarterly_price,
+        half_yearly_price: pkg.half_yearly_price,
+        yearly_price: pkg.yearly_price,
+        accept_periods: pkg.accept_periods,
+        is_active: payload.is_active
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`Package ${payload.is_active ? 'activated' : 'deactivated'} successfully`);
+        fetchPackages();
+      } else {
+        toast.error(data.message || 'Failed to update package status');
+      }
+    } catch (error) {
+      toast.error('Error updating package status');
+    }
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const url = selectedPackage ? `/packages/${selectedPackage.id}` : '/packages';
+      const method = selectedPackage ? 'PUT' : 'POST';
+      
+      const payload = { ...formData };
+      payload.min_employee_count = parseInt(payload.min_employee_count);
+      payload.max_employee_count = parseInt(payload.max_employee_count);
+      payload.monthly_price = parseFloat(payload.monthly_price || 0);
+      payload.quarterly_price = parseFloat(payload.quarterly_price || 0);
+      payload.half_yearly_price = parseFloat(payload.half_yearly_price || 0);
+      payload.yearly_price = parseFloat(payload.yearly_price || 0);
+      
+      const response = await apiCall(url, method, payload);
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success(selectedPackage ? 'Package updated successfully' : 'Package created successfully');
+        setIsFormModalOpen(false);
+        fetchPackages();
+      } else {
+        toast.error(data.message || 'Failed to save package');
+      }
+    } catch (error) {
+      toast.error('Error saving package');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePeriodToggle = (period) => {
+    setFormData(prev => {
+      const current = prev.accept_periods || [];
+      if (current.includes(period)) {
+        return { ...prev, accept_periods: current.filter(p => p !== period) };
+      }
+      return { ...prev, accept_periods: [...current, period] };
+    });
+  };
 
   const getStatusColor = (isActive) => {
     return isActive 
@@ -118,18 +252,18 @@ const Packages = () => {
     {
       label: 'Edit Package',
       icon: <Edit2 className="w-4 h-4" />,
-      onClick: () => toast.success('Edit action clicked')
+      onClick: () => handleOpenEdit(row)
     },
     {
       label: row.is_active ? 'Deactivate' : 'Activate',
       icon: <Activity className="w-4 h-4" />,
-      onClick: () => toast.success('Status toggle action clicked')
+      onClick: () => handleToggleStatus(row)
     },
     {
       label: 'Delete',
       icon: <Trash2 className="w-4 h-4 text-red-500" />,
       className: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30',
-      onClick: () => toast.success('Delete action clicked')
+      onClick: () => handleDeleteClick(row.id)
     }
   ];
 
@@ -140,7 +274,13 @@ const Packages = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Subscription Packages</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage pricing tiers and limits.</p>
         </div>
-        <RefreshButton onClick={fetchPackages} loading={loading} />
+        <div className="flex items-center gap-2">
+          <RefreshButton onClick={fetchPackages} loading={loading} />
+          <button onClick={handleOpenCreate} className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
+            <Plus className="w-4 h-4" />
+            Create
+          </button>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -158,10 +298,6 @@ const Packages = () => {
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none text-sm text-gray-800 dark:text-white"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
         </div>
 
         {/* Table */}
@@ -199,7 +335,7 @@ const Packages = () => {
         onClose={() => setIsViewModalOpen(false)}
         title="Package Details"
         icon={Package}
-        size="md"
+        size="lg"
         closeText="Close"
       >
         {selectedPackage && (
@@ -274,6 +410,175 @@ const Packages = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Form Modal */}
+      <Modal
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        title={selectedPackage ? 'Edit Package' : 'Create Package'}
+        icon={Package}
+        size="2xl"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsFormModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="package-form"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isSubmitting && <Activity className="w-4 h-4 animate-spin" />}
+              {selectedPackage ? 'Save Changes' : 'Create Package'}
+            </button>
+          </>
+        }
+      >
+        <form id="package-form" onSubmit={handleFormSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2 space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Package Name</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+                placeholder="e.g. Pro Tier"
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Min Employees</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={formData.min_employee_count}
+                onChange={(e) => setFormData({ ...formData, min_employee_count: e.target.value })}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Employees</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={formData.max_employee_count}
+                onChange={(e) => setFormData({ ...formData, max_employee_count: e.target.value })}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Price (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={formData.monthly_price}
+                onChange={(e) => setFormData({ ...formData, monthly_price: e.target.value })}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quarterly Price (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={formData.quarterly_price}
+                onChange={(e) => setFormData({ ...formData, quarterly_price: e.target.value })}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Half-Yearly Price (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={formData.half_yearly_price}
+                onChange={(e) => setFormData({ ...formData, half_yearly_price: e.target.value })}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Yearly Price (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={formData.yearly_price}
+                onChange={(e) => setFormData({ ...formData, yearly_price: e.target.value })}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="md:col-span-2 space-y-2 mt-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Accepted Billing Periods</label>
+              <div className="flex flex-wrap gap-3">
+                {['monthly', 'quarterly', 'half_yearly', 'yearly'].map(period => (
+                  <label key={period} className="flex items-center gap-2 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border ${formData.accept_periods.includes(period) ? 'bg-blue-600 border-blue-600' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 group-hover:border-blue-500'} flex items-center justify-center transition-colors`}>
+                      {formData.accept_periods.includes(period) && <div className="w-2 h-2 bg-white rounded-sm"></div>}
+                    </div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">{period.replace('_', '-')}</span>
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={formData.accept_periods.includes(period)}
+                      onChange={() => handlePeriodToggle(period)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="md:col-span-2 flex items-center gap-3 mt-2">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={formData.is_active === 1}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })}
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Active Package</span>
+              </label>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeleteTargetId(null);
+        }}
+        title="Confirm Deletion"
+        icon={Trash2}
+        size="sm"
+        onConfirm={confirmDelete}
+        confirmText="Delete"
+        closeText="Cancel"
+      >
+        <p className="text-gray-600 dark:text-gray-300">
+          Are you sure you want to delete this package? This action cannot be undone.
+        </p>
       </Modal>
     </div>
   );

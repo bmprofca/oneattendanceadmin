@@ -135,22 +135,6 @@ const Users = () => {
         setSelectedUser(row);
         setIsViewModalOpen(true);
       }
-    },
-    {
-      label: 'Edit User',
-      icon: <Edit2 className="w-4 h-4" />,
-      onClick: () => toast.success('Edit action clicked')
-    },
-    {
-      label: row.is_active ? 'Deactivate' : 'Activate',
-      icon: <Activity className="w-4 h-4" />,
-      onClick: () => toast.success('Status toggle action clicked')
-    },
-    {
-      label: 'Delete',
-      icon: <Trash2 className="w-4 h-4 text-red-500" />,
-      className: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30',
-      onClick: () => toast.success('Delete action clicked')
     }
   ];
 
@@ -179,10 +163,7 @@ const Users = () => {
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none text-sm text-gray-800 dark:text-white"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
+          
         </div>
 
         {/* Table */}
@@ -220,7 +201,7 @@ const Users = () => {
         onClose={() => setIsViewModalOpen(false)}
         title="User Details"
         icon={UsersIcon}
-        size="md"
+        size="lg"
         closeText="Close"
       >
         {selectedUser && (
