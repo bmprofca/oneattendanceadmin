@@ -14,18 +14,18 @@ import { apiCall } from '../utils/apiCall';
 import SelectField from '../components/common/SelectField';
 
 const COUNTRY_CODE_OPTIONS = [
-  { value: '91',  label: '🇮🇳 +91  India' },
-  { value: '1',   label: '🇺🇸 +1   USA / Canada' },
-  { value: '44',  label: '🇬🇧 +44  UK' },
-  { value: '61',  label: '🇦🇺 +61  Australia' },
-  { value: '971', label: '🇦🇪 +971 UAE' },
-  { value: '65',  label: '🇸🇬 +65  Singapore' },
-  { value: '60',  label: '🇲🇾 +60  Malaysia' },
-  { value: '64',  label: '🇳🇿 +64  New Zealand' },
-  { value: '27',  label: '🇿🇦 +27  South Africa' },
-  { value: '49',  label: '🇩🇪 +49  Germany' },
-  { value: '33',  label: '🇫🇷 +33  France' },
-  { value: '81',  label: '🇯🇵 +81  Japan' },
+  { value: '91',  label: '🇮🇳 +91' },
+  { value: '1',   label: '🇺🇸 +1' },
+  { value: '44',  label: '🇬🇧 +44' },
+  { value: '61',  label: '🇦🇺 +61' },
+  { value: '971', label: '🇦🇪 +971' },
+  { value: '65',  label: '🇸🇬 +65' },
+  { value: '60',  label: '🇲🇾 +60' },
+  { value: '64',  label: '🇳🇿 +64' },
+  { value: '27',  label: '🇿🇦 +27' },
+  { value: '49',  label: '🇩🇪 +49' },
+  { value: '33',  label: '🇫🇷 +33' },
+  { value: '81',  label: '🇯🇵 +81' },
 ];
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
