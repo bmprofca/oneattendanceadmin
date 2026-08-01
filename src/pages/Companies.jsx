@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Users as UsersIcon, Activity, UserPlus, Eye, Edit2, Trash2, Mail, Phone, Calendar, Clock, Shield } from 'lucide-react';
+import { Search, Filter, Briefcase, Activity, Plus, Clock, Eye, Edit2, Trash2, Mail, Phone, Calendar, MapPin, FileText } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import { API_BASE } from '../utils/config';
 import ManagementTable from '../components/common/ManagementTable';
@@ -8,27 +8,27 @@ import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
 
-const Users = () => {
-  const [users, setUsers] = useState([]);
+const Companies = () => {
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modal state
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const response = await apiCall('/users');
+      const response = await apiCall('/companies');
       const data = await response.json();
       if (data.success) {
-        setUsers(data.data || []);
+        setCompanies(data.data || []);
       } else {
-        toast.error(data.message || 'Failed to fetch users');
+        toast.error(data.message || 'Failed to fetch companies');
       }
     } catch (error) {
-      toast.error('Error fetching users');
+      toast.error('Error fetching companies');
       console.error(error);
     } finally {
       setLoading(false);
@@ -36,7 +36,7 @@ const Users = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchCompanies();
   }, []);
 
   const getStatusColor = (isActive) => {
@@ -52,54 +52,56 @@ const Users = () => {
     return `${baseUrl}${path}`;
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCompanies = companies.filter(company => 
+    company.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    company.owner_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.legal_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns = [
     {
-      key: 'user',
-      label: 'User',
+      key: 'company',
+      label: 'Company',
       render: (row) => (
         <div className="flex items-center gap-3">
-          {row.profile_picture ? (
+          {row.logo_url ? (
             <img 
-              src={getImageUrl(row.profile_picture)}
+              src={getImageUrl(row.logo_url)}
               alt={row.name}
-              className="w-10 h-10 rounded-full object-cover shadow-sm"
+              className="w-10 h-10 rounded-lg object-cover shadow-sm border border-gray-100 dark:border-gray-700"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(row.name || 'U');
+                e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(row.name || 'C') + '&background=random';
               }}
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-              {row.name ? row.name.charAt(0).toUpperCase() : 'U'}
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+              {row.name ? row.name.charAt(0).toUpperCase() : 'C'}
             </div>
           )}
           <div>
             <div className="font-medium text-gray-900 dark:text-white">{row.name}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{row.email}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title={row.legal_name}>{row.legal_name || 'N/A'}</div>
           </div>
         </div>
       )
     },
     {
-      key: 'role',
-      label: 'Role',
+      key: 'owner',
+      label: 'Owner',
       render: (row) => (
-        <span className="text-gray-700 dark:text-gray-300 font-medium">
-          {row.profession || (row.is_system_admin ? 'System Admin' : 'User')}
-        </span>
+        <div>
+          <div className="font-medium text-gray-800 dark:text-gray-200">{row.owner_name}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{row.owner_email}</div>
+        </div>
       )
     },
     {
-      key: 'phone',
-      label: 'Phone',
+      key: 'location',
+      label: 'Location',
       render: (row) => (
         <span className="text-gray-600 dark:text-gray-400">
-          {row.phone || 'N/A'}
+          {[row.city, row.state, row.country].filter(Boolean).join(', ') || 'N/A'}
         </span>
       )
     },
@@ -113,8 +115,8 @@ const Users = () => {
       )
     },
     {
-      key: 'joined',
-      label: 'Joined',
+      key: 'created_at',
+      label: 'Created',
       render: (row) => (
         <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
           {new Date(row.created_at).toLocaleDateString()}
@@ -128,12 +130,12 @@ const Users = () => {
       label: 'View Details',
       icon: <Eye className="w-4 h-4" />,
       onClick: () => {
-        setSelectedUser(row);
+        setSelectedCompany(row);
         setIsViewModalOpen(true);
       }
     },
     {
-      label: 'Edit User',
+      label: 'Edit Company',
       icon: <Edit2 className="w-4 h-4" />,
       onClick: () => toast.success('Edit action clicked')
     },
@@ -154,10 +156,10 @@ const Users = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage system users and their roles.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Companies</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage tenant companies and their subscriptions.</p>
         </div>
-        <RefreshButton onClick={fetchUsers} loading={loading} />
+        <RefreshButton onClick={fetchCompanies} loading={loading} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -169,7 +171,7 @@ const Users = () => {
             </div>
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search companies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none text-sm text-gray-800 dark:text-white"
@@ -183,75 +185,76 @@ const Users = () => {
 
         {/* Table */}
         <ManagementTable
-          rows={filteredUsers}
+          rows={filteredCompanies}
           columns={columns}
           rowKey="id"
           getActions={getActions}
-          accent="blue"
+          accent="indigo"
           emptyState={
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              {loading ? 'Loading users...' : 'No users found.'}
+              {loading ? 'Loading companies...' : 'No companies found.'}
             </div>
           }
         />
         
         {/* Pagination Dummy */}
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">
-          <span>Showing {filteredUsers.length > 0 ? 1 : 0} to {filteredUsers.length} of {users.length} entries</span>
+          <span>Showing {filteredCompanies.length > 0 ? 1 : 0} to {filteredCompanies.length} of {companies.length} entries</span>
           <div className="flex gap-1">
             <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Prev</button>
-            <button className="px-3 py-1 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors">1</button>
+            <button className="px-3 py-1 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors">1</button>
             <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Next</button>
           </div>
         </div>
       </div>
 
-      {/* View User Modal */}
+      {/* View Company Modal */}
       <Modal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
-        title="User Details"
-        icon={UsersIcon}
+        title="Company Details"
+        icon={Briefcase}
         size="md"
         closeText="Close"
       >
-        {selectedUser && (
+        {selectedCompany && (
           <div className="space-y-6">
             <div className="flex items-center gap-4">
-              {selectedUser.profile_picture ? (
+              {selectedCompany.logo_url ? (
                  <img 
-                 src={getImageUrl(selectedUser.profile_picture)}
-                 alt={selectedUser.name}
-                 className="w-20 h-20 rounded-full object-cover shadow-md border-4 border-white dark:border-gray-700"
+                 src={getImageUrl(selectedCompany.logo_url)}
+                 alt={selectedCompany.name}
+                 className="w-20 h-20 rounded-xl object-cover shadow-md border-2 border-gray-100 dark:border-gray-700"
                  onError={(e) => {
                    e.target.onerror = null;
-                   e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(selectedUser.name || 'U') + '&size=128';
+                   e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(selectedCompany.name || 'C') + '&size=128&background=random';
                  }}
                />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-3xl font-bold shadow-md border-4 border-white dark:border-gray-700">
-                  {selectedUser.name ? selectedUser.name.charAt(0).toUpperCase() : 'U'}
+                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold shadow-md border-2 border-gray-100 dark:border-gray-700">
+                  {selectedCompany.name ? selectedCompany.name.charAt(0).toUpperCase() : 'C'}
                 </div>
               )}
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedUser.name}</h3>
-                <p className="text-indigo-600 dark:text-indigo-400 font-medium">
-                  {selectedUser.profession || (selectedUser.is_system_admin ? 'System Admin' : 'User')}
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedCompany.name}</h3>
+                <p className="text-gray-500 dark:text-gray-400 font-medium text-sm">
+                  {selectedCompany.legal_name || 'No Legal Name'}
                 </p>
-                <span className={`inline-block mt-2 px-2.5 py-1 text-xs font-semibold rounded-full border border-transparent ${getStatusColor(selectedUser.is_active)}`}>
-                  {selectedUser.is_active ? 'Active' : 'Inactive'}
+                <span className={`inline-block mt-2 px-2.5 py-1 text-xs font-semibold rounded-full border border-transparent ${getStatusColor(selectedCompany.is_active)}`}>
+                  {selectedCompany.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
             </div>
 
             <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 space-y-4">
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Owner Information</h4>
               <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
                 <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
                   <Mail className="w-4 h-4 text-blue-500" />
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Email Address</div>
-                  <div className="font-medium">{selectedUser.email || 'N/A'}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{selectedCompany.owner_name || 'Owner'}</div>
+                  <div className="font-medium">{selectedCompany.owner_email || 'N/A'}</div>
                 </div>
               </div>
               
@@ -261,17 +264,33 @@ const Users = () => {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Phone Number</div>
-                  <div className="font-medium">{selectedUser.phone || 'N/A'}</div>
+                  <div className="font-medium">{selectedCompany.owner_phone || 'N/A'}</div>
                 </div>
               </div>
-              
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 space-y-4">
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Company Details</h4>
               <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
                 <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                  <Shield className="w-4 h-4 text-purple-500" />
+                  <FileText className="w-4 h-4 text-orange-500" />
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">System Admin</div>
-                  <div className="font-medium">{selectedUser.is_system_admin ? 'Yes' : 'No'}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">GST Number</div>
+                  <div className="font-medium">{selectedCompany.gst_no || 'Not Provided'}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm shrink-0">
+                  <MapPin className="w-4 h-4 text-red-500" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Address</div>
+                  <div className="font-medium">
+                    {[selectedCompany.address_line1, selectedCompany.address_line2].filter(Boolean).join(', ')}<br />
+                    {[selectedCompany.city, selectedCompany.state, selectedCompany.postal_code, selectedCompany.country].filter(Boolean).join(', ')}
+                  </div>
                 </div>
               </div>
             </div>
@@ -280,18 +299,18 @@ const Users = () => {
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-gray-400" />
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Joined Date</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Created Date</div>
                   <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {new Date(selectedUser.created_at).toLocaleDateString()}
+                    {new Date(selectedCompany.created_at).toLocaleDateString()}
                   </div>
                 </div>
               </div>
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
                 <Clock className="w-5 h-5 text-gray-400" />
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Last Login</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Last Updated</div>
                   <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString() : 'Never'}
+                    {new Date(selectedCompany.updated_at).toLocaleDateString()}
                   </div>
                 </div>
               </div>
@@ -303,4 +322,4 @@ const Users = () => {
   );
 };
 
-export default Users;
+export default Companies;

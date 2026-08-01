@@ -55,6 +55,16 @@ const Sidebar = ({
       label: "Clients",
       path: "/clients",
     },
+    {
+      icon: Briefcase,
+      label: "Companies",
+      path: "/companies",
+    },
+    {
+      icon: Wallet,
+      label: "Subscriptions",
+      path: "/subscriptions",
+    },
   ];
 
   const menuItems = allMenuItems.filter((item) => {
