@@ -373,14 +373,50 @@ const Login = () => {
               <div className="space-y-3">
                 {/* Country code + phone number row */}
                 <div className="flex gap-2">
-                  {/* Country code selector */}
-                  <div className="shrink-0" style={{ width: '9rem' }}>
+                  {/* Country code selector — compact, height-matched */}
+                  <div className="shrink-0" style={{ width: '6.5rem' }}>
                     <SelectField
                       options={COUNTRY_CODE_OPTIONS}
                       value={COUNTRY_CODE_OPTIONS.find((o) => o.value === countryCode) || null}
                       onChange={(opt) => setCountryCode(opt ? opt.value : '91')}
-                      isSearchable
+                      isSearchable={false}
                       menuPlacement="auto"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          minHeight: '46px',
+                          height: '46px',
+                          borderRadius: '1rem',
+                          borderWidth: '2px',
+                          borderColor: 'var(--line)',
+                          backgroundColor: 'var(--surface-1)',
+                          boxShadow: 'none',
+                          cursor: 'pointer',
+                          '&:hover': { borderColor: 'var(--line)' },
+                        }),
+                        valueContainer: (base) => ({
+                          ...base,
+                          padding: '0 4px 0 10px',
+                          height: '46px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexWrap: 'nowrap',
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          whiteSpace: 'nowrap',
+                        }),
+                        dropdownIndicator: (base) => ({
+                          ...base,
+                          padding: '0 6px 0 0',
+                        }),
+                        indicatorsContainer: (base) => ({
+                          ...base,
+                          height: '46px',
+                        }),
+                      }}
                     />
                   </div>
 
@@ -395,7 +431,7 @@ const Login = () => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                       placeholder="9876543210"
-                      className="w-full pl-12 pr-4 py-3 bg-[var(--surface-1)] border-2 border-[var(--line)] rounded-2xl outline-none text-[var(--text-hi)] text-base font-mono tracking-wide placeholder:text-[var(--text-low)] focus:border-[var(--signal)] focus:bg-[var(--surface-0)] focus:shadow-[0_0_0_4px_var(--signal-dim)] transition-all duration-200"
+                      className="w-full h-[46px] pl-12 pr-4 bg-[var(--surface-1)] border-2 border-[var(--line)] rounded-2xl outline-none text-[var(--text-hi)] text-base font-mono tracking-wide placeholder:text-[var(--text-low)] focus:border-[var(--signal)] focus:bg-[var(--surface-0)] focus:shadow-[0_0_0_4px_var(--signal-dim)] transition-all duration-200"
                     />
                   </div>
                 </div>
