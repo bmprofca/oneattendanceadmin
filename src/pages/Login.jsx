@@ -11,6 +11,22 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiCall } from '../utils/apiCall';
+import SelectField from '../components/common/SelectField';
+
+const COUNTRY_CODE_OPTIONS = [
+  { value: '91',  label: '🇮🇳 +91  India' },
+  { value: '1',   label: '🇺🇸 +1   USA / Canada' },
+  { value: '44',  label: '🇬🇧 +44  UK' },
+  { value: '61',  label: '🇦🇺 +61  Australia' },
+  { value: '971', label: '🇦🇪 +971 UAE' },
+  { value: '65',  label: '🇸🇬 +65  Singapore' },
+  { value: '60',  label: '🇲🇾 +60  Malaysia' },
+  { value: '64',  label: '🇳🇿 +64  New Zealand' },
+  { value: '27',  label: '🇿🇦 +27  South Africa' },
+  { value: '49',  label: '🇩🇪 +49  Germany' },
+  { value: '33',  label: '🇫🇷 +33  France' },
+  { value: '81',  label: '🇯🇵 +81  Japan' },
+];
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
 
@@ -81,6 +97,7 @@ const styles = `
 
 const Login = () => {
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('91');
   const [otpDigits, setOtpDigits] = useState(Array(OTP_LENGTH).fill(''));
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -115,15 +132,18 @@ const Login = () => {
   }, [otp]);
 
   const maskedPhone = () => {
-    if (phone.length <= 4) return phone;
-    return `${'•'.repeat(Math.max(phone.length - 4, 0))} ${phone.slice(-4)}`;
+    if (phone.length <= 4) return `+${countryCode} ${phone}`;
+    return `+${countryCode} ${'•'.repeat(Math.max(phone.length - 4, 0))} ${phone.slice(-4)}`;
   };
+
+  // Full number sent to API = countryCode + localNumber
+  const fullPhone = () => `${countryCode}${phone}`;
 
   const sendOtpRequest = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await apiCall('/auth/send-otp', 'POST', { phone });
+      const response = await apiCall('/auth/send-otp', 'POST', { phone: fullPhone() });
       const data = await response.json();
       if (response.ok) {
         setStep(2);
@@ -142,7 +162,7 @@ const Login = () => {
 
   const handleSendOtp = (e) => {
     e.preventDefault();
-    if (!phone || phone.length < 10) {
+    if (!phone || phone.length < 7) {
       setError('Enter a valid phone number');
       return;
     }
@@ -195,7 +215,7 @@ const Login = () => {
     setLoading(true);
     setError('');
     try {
-      const verifyRes = await apiCall('/auth/verify-otp', 'POST', { phone, otp });
+      const verifyRes = await apiCall('/auth/verify-otp', 'POST', { phone: fullPhone(), otp });
 
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok || !verifyData.success) {
@@ -350,27 +370,38 @@ const Login = () => {
 
           {step === 1 ? (
             <form onSubmit={handleSendOtp} className="space-y-5">
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-semibold tracking-wide text-[var(--text-mid)] mb-2 uppercase"
-                >
-                  Phone number
-                </label>
-                <div className="group relative flex items-center">
-                  <Phone className="absolute left-4 w-5 h-5 text-[var(--text-low)] group-focus-within:text-[var(--signal)] transition-colors" />
-                  <input
-                    id="phone"
-                    type="text"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                    placeholder="919876543210"
-                    className="w-full pl-12 pr-4 py-3 bg-[var(--surface-1)] border-2 border-[var(--line)] rounded-2xl outline-none text-[var(--text-hi)] text-base font-mono tracking-wide placeholder:text-[var(--text-low)] focus:border-[var(--signal)] focus:bg-[var(--surface-0)] focus:shadow-[0_0_0_4px_var(--signal-dim)] transition-all duration-200"
-                  />
+              <div className="space-y-3">
+                {/* Country code + phone number row */}
+                <div className="flex gap-2">
+                  {/* Country code selector */}
+                  <div className="shrink-0" style={{ width: '9rem' }}>
+                    <SelectField
+                      options={COUNTRY_CODE_OPTIONS}
+                      value={COUNTRY_CODE_OPTIONS.find((o) => o.value === countryCode) || null}
+                      onChange={(opt) => setCountryCode(opt ? opt.value : '91')}
+                      isSearchable
+                      menuPlacement="auto"
+                    />
+                  </div>
+
+                  {/* Phone number input */}
+                  <div className="group relative flex flex-1 items-center">
+                    <Phone className="absolute left-4 w-5 h-5 text-[var(--text-low)] group-focus-within:text-[var(--signal)] transition-colors" />
+                    <input
+                      id="phone"
+                      type="text"
+                      inputMode="numeric"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                      placeholder="9876543210"
+                      className="w-full pl-12 pr-4 py-3 bg-[var(--surface-1)] border-2 border-[var(--line)] rounded-2xl outline-none text-[var(--text-hi)] text-base font-mono tracking-wide placeholder:text-[var(--text-low)] focus:border-[var(--signal)] focus:bg-[var(--surface-0)] focus:shadow-[0_0_0_4px_var(--signal-dim)] transition-all duration-200"
+                    />
+                  </div>
                 </div>
-                <p className="mt-2 text-sm text-[var(--text-low)]">
-                  Include country code, no spaces or symbols.
+
+                <p className="text-sm text-[var(--text-low)]">
+                  Enter your local number — country code is selected above.
                 </p>
               </div>
 
