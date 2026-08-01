@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Wallet, Activity, Plus, Eye, Edit2, Trash2, Calendar, FileText, Users as UsersIcon } from 'lucide-react';
+import { Search, Wallet, Activity, Plus, Eye, Edit2, Trash2, Calendar, FileText, Users as UsersIcon, Lock } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import ManagementTable from '../components/common/ManagementTable';
 import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
+import SelectField from '../components/common/SelectField';
+import AdvancedDateFilter from '../components/common/AdvancedDateFilter';
 import { toast } from 'react-hot-toast';
 
 const formatDateForInput = (dateString) => {
@@ -13,12 +15,52 @@ const formatDateForInput = (dateString) => {
   return d.toISOString().substring(0, 16);
 };
 
+// Convert YYYY-MM-DD (from AdvancedDateFilter) → ISO datetime string at noon UTC
+const isoDateToDatetime = (isoDate) => {
+  if (!isoDate) return '';
+  // Use noon local time so timezone offsets don't shift the date
+  const d = new Date(`${isoDate}T12:00:00`);
+  return isNaN(d.getTime()) ? '' : d.toISOString();
+};
+
+// Extract YYYY-MM-DD from an ISO datetime string for the picker's value object
+const datetimeToPickerValue = (datetimeStr) => {
+  if (!datetimeStr) return { date: '', month: '', year: '', from_date: '', to_date: '' };
+  const d = new Date(datetimeStr);
+  if (isNaN(d.getTime())) return { date: '', month: '', year: '', from_date: '', to_date: '' };
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return { date: `${y}-${m}-${day}`, month: '', year: '', from_date: '', to_date: '' };
+};
+
+// Map subscription_type → package price field key
+const PERIOD_PRICE_KEY = {
+  monthly:     'monthly_price',
+  quarterly:   'quarterly_price',
+  half_yearly: 'half_yearly_price',
+  yearly:      'yearly_price',
+};
+
+const BILLING_PERIOD_OPTIONS = [
+  { value: 'monthly',     label: 'Monthly' },
+  { value: 'quarterly',   label: 'Quarterly' },
+  { value: 'half_yearly', label: 'Half Yearly' },
+  { value: 'yearly',      label: 'Yearly' },
+];
+
+const PAYMENT_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'success', label: 'Success' },
+  { value: 'failed',  label: 'Failed' },
+];
+
 const initialFormData = {
   company_id: '',
   subscription_package_id: '',
-  employee_limit: 100,
+  employee_limit: '',
   subscription_type: 'monthly',
-  amount_paid: 0,
+  amount_paid: '',
   starts_at: '',
   expires_at: '',
   payment_reference: '',
@@ -29,6 +71,12 @@ const initialFormData = {
   is_active: 1
 };
 
+const inputClass =
+  'w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white transition-colors';
+
+const readonlyClass =
+  'w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none text-gray-500 dark:text-gray-400 cursor-not-allowed select-none';
+
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -36,7 +84,9 @@ const Subscriptions = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const isFetchingRef = useRef(false);
-  
+  const dependenciesLoadedRef = useRef(false);
+  const isFetchingDepsRef = useRef(false);
+
   // Modal state
   const [selectedSub, setSelectedSub] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -48,6 +98,20 @@ const Subscriptions = () => {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // ─── Derived: selected package object ────────────────────────────────────
+  const selectedPackage = packagesList.find(
+    (p) => String(p.id) === String(formData.subscription_package_id)
+  ) || null;
+
+  // Auto-derive employee_limit and amount_paid from package + billing period
+  const derivedEmployeeLimit = selectedPackage
+    ? selectedPackage.max_employee_count
+    : '';
+  const derivedAmountPaid = selectedPackage && formData.subscription_type
+    ? (selectedPackage[PERIOD_PRICE_KEY[formData.subscription_type]] ?? '')
+    : '';
+
+  // ─── API helpers ─────────────────────────────────────────────────────────
   const fetchSubscriptions = async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
@@ -70,6 +134,8 @@ const Subscriptions = () => {
   };
 
   const fetchDependencies = async () => {
+    if (isFetchingDepsRef.current) return;
+    isFetchingDepsRef.current = true;
     try {
       const [compRes, packRes] = await Promise.all([
         apiCall('/companies'),
@@ -79,30 +145,40 @@ const Subscriptions = () => {
       const packData = await packRes.json();
       if (compData.success) setCompanies(compData.data || []);
       if (packData.success) setPackagesList(packData.data || []);
+      dependenciesLoadedRef.current = true;
     } catch (error) {
-      console.error("Error fetching dependencies", error);
+      console.error('Error fetching dependencies', error);
+    } finally {
+      isFetchingDepsRef.current = false;
     }
   };
 
   useEffect(() => {
     fetchSubscriptions();
-    fetchDependencies();
   }, []);
 
-  const handleOpenCreate = () => {
+  // Lazily load companies + packages only when the form modal needs them
+  const ensureDependenciesLoaded = async () => {
+    if (dependenciesLoadedRef.current || isFetchingDepsRef.current) return;
+    await fetchDependencies();
+  };
+
+  // ─── Modal handlers ───────────────────────────────────────────────────────
+  const handleOpenCreate = async () => {
     setSelectedSub(null);
     setFormData(initialFormData);
     setIsFormModalOpen(true);
+    await ensureDependenciesLoaded();
   };
 
-  const handleOpenEdit = (sub) => {
+  const handleOpenEdit = async (sub) => {
     setSelectedSub(sub);
     setFormData({
       company_id: sub.company_id,
       subscription_package_id: sub.subscription_package_id,
-      employee_limit: sub.employee_limit || 100,
+      employee_limit: sub.employee_limit ?? '',
       subscription_type: sub.subscription_type || 'monthly',
-      amount_paid: sub.amount_paid || 0,
+      amount_paid: sub.amount_paid ?? '',
       starts_at: formatDateForInput(sub.starts_at),
       expires_at: formatDateForInput(sub.expires_at),
       payment_reference: sub.payment_reference || '',
@@ -113,6 +189,7 @@ const Subscriptions = () => {
       is_active: sub.is_active ? 1 : 0
     });
     setIsFormModalOpen(true);
+    await ensureDependenciesLoaded();
   };
 
   const handleDeleteClick = (id) => {
@@ -141,14 +218,13 @@ const Subscriptions = () => {
 
   const handleToggleStatus = async (sub) => {
     try {
-      const payload = { 
+      const payload = {
         is_active: sub.is_active ? 0 : 1,
         status: sub.is_active ? 'inactive' : 'active',
         payment_status: sub.payment_status,
         starts_at: sub.starts_at,
         expires_at: sub.expires_at
       };
-      
       const response = await apiCall(`/subscriptions/${sub.id}/status`, 'PATCH', payload);
       const data = await response.json();
       if (data.success) {
@@ -168,18 +244,18 @@ const Subscriptions = () => {
     try {
       const url = selectedSub ? `/subscriptions/${selectedSub.id}` : '/subscriptions';
       const method = selectedSub ? 'PUT' : 'POST';
-      
+
       const payload = { ...formData };
-      payload.company_id = parseInt(payload.company_id);
-      payload.subscription_package_id = parseInt(payload.subscription_package_id);
-      payload.employee_limit = parseInt(payload.employee_limit);
-      payload.amount_paid = parseFloat(payload.amount_paid);
-      
+      // Use derived values for read-only fields
+      payload.employee_limit = parseInt(derivedEmployeeLimit) || parseInt(formData.employee_limit) || 0;
+      payload.amount_paid    = parseFloat(derivedAmountPaid)  || parseFloat(formData.amount_paid)  || 0;
+      payload.company_id                = parseInt(payload.company_id);
+      payload.subscription_package_id   = parseInt(payload.subscription_package_id);
+
       if (payload.starts_at) payload.starts_at = new Date(payload.starts_at).toISOString();
       if (payload.expires_at) payload.expires_at = new Date(payload.expires_at).toISOString();
 
       const response = await apiCall(url, method, payload);
-      
       const data = await response.json();
       if (data.success) {
         toast.success(selectedSub ? 'Subscription updated successfully' : 'Subscription created successfully');
@@ -195,28 +271,41 @@ const Subscriptions = () => {
     }
   };
 
-  const getStatusColor = (isActive) => {
-    return isActive 
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  const getStatusColor = (isActive) =>
+    isActive
       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
       : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
-  };
 
   const getPaymentStatusColor = (status) => {
-    switch(status?.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'success': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400';
       case 'pending': return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400';
-      case 'failed': return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+      case 'failed':  return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
+      default:        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
     }
   };
 
-  const filteredSubscriptions = subscriptions.filter(sub => 
-    sub.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    sub.company_legal_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.package_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.payment_reference?.toLowerCase().includes(searchTerm.toLowerCase())
+  // react-select option arrays
+  const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }));
+  const packageOptions  = packagesList.map((p) => ({ value: p.id, label: p.name }));
+
+  // Allowed billing periods for the selected package (only those in accept_periods)
+  const allowedBillingOptions = selectedPackage
+    ? BILLING_PERIOD_OPTIONS.filter((opt) =>
+        selectedPackage.accept_periods?.includes(opt.value)
+      )
+    : BILLING_PERIOD_OPTIONS;
+
+  const filteredSubscriptions = subscriptions.filter(
+    (sub) =>
+      sub.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.company_legal_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.package_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.payment_reference?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // ─── Table columns ────────────────────────────────────────────────────────
   const columns = [
     {
       key: 'company',
@@ -224,7 +313,9 @@ const Subscriptions = () => {
       render: (row) => (
         <div>
           <div className="font-medium text-gray-900 dark:text-white">{row.company_name}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title={row.company_legal_name}>{row.company_legal_name || 'N/A'}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title={row.company_legal_name}>
+            {row.company_legal_name || 'N/A'}
+          </div>
         </div>
       )
     },
@@ -265,10 +356,12 @@ const Subscriptions = () => {
       render: (row) => (
         <div className="text-sm">
           <div className="text-gray-600 dark:text-gray-300">
-            <span className="text-xs text-gray-400 inline-block w-8">From:</span> {new Date(row.starts_at).toLocaleDateString()}
+            <span className="text-xs text-gray-400 inline-block w-8">From:</span>{' '}
+            {new Date(row.starts_at).toLocaleDateString()}
           </div>
           <div className="text-gray-600 dark:text-gray-300">
-            <span className="text-xs text-gray-400 inline-block w-8">To:</span> {new Date(row.expires_at).toLocaleDateString()}
+            <span className="text-xs text-gray-400 inline-block w-8">To:</span>{' '}
+            {new Date(row.expires_at).toLocaleDateString()}
           </div>
         </div>
       )
@@ -288,10 +381,7 @@ const Subscriptions = () => {
     {
       label: 'View Details',
       icon: <Eye className="w-4 h-4" />,
-      onClick: () => {
-        setSelectedSub(row);
-        setIsViewModalOpen(true);
-      }
+      onClick: () => { setSelectedSub(row); setIsViewModalOpen(true); }
     },
     {
       label: 'Edit Subscription',
@@ -311,6 +401,7 @@ const Subscriptions = () => {
     }
   ];
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -320,7 +411,10 @@ const Subscriptions = () => {
         </div>
         <div className="flex items-center gap-2">
           <RefreshButton onClick={fetchSubscriptions} loading={loading} />
-          <button onClick={handleOpenCreate} className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+          >
             <Plus className="w-4 h-4" />
             Create
           </button>
@@ -350,10 +444,7 @@ const Subscriptions = () => {
           columns={columns}
           rowKey="id"
           getActions={getActions}
-          onRowClick={(row) => {
-            setSelectedSub(row);
-            setIsViewModalOpen(true);
-          }}
+          onRowClick={(row) => { setSelectedSub(row); setIsViewModalOpen(true); }}
           accent="indigo"
           emptyState={
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -361,10 +452,12 @@ const Subscriptions = () => {
             </div>
           }
         />
-        
+
         {/* Pagination Dummy */}
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">
-          <span>Showing {filteredSubscriptions.length > 0 ? 1 : 0} to {filteredSubscriptions.length} of {subscriptions.length} entries</span>
+          <span>
+            Showing {filteredSubscriptions.length > 0 ? 1 : 0} to {filteredSubscriptions.length} of {subscriptions.length} entries
+          </span>
           <div className="flex gap-1">
             <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Prev</button>
             <button className="px-3 py-1 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors">1</button>
@@ -373,7 +466,7 @@ const Subscriptions = () => {
         </div>
       </div>
 
-      {/* View Subscription Modal */}
+      {/* ── View Subscription Modal ── */}
       <Modal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
@@ -413,7 +506,6 @@ const Subscriptions = () => {
                 </div>
                 <div className="text-lg font-bold text-gray-900 dark:text-white">{selectedSub.package_name}</div>
               </div>
-              
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-xs font-semibold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Employee Limit</div>
@@ -452,37 +544,26 @@ const Subscriptions = () => {
             <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 space-y-4">
               <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Transaction Details</h4>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Payment Reference</div>
-                  <div className="font-medium text-sm text-gray-900 dark:text-white truncate" title={selectedSub.payment_reference}>
-                    {selectedSub.payment_reference || 'N/A'}
+                {[
+                  { label: 'Payment Reference', val: selectedSub.payment_reference },
+                  { label: 'Order ID',           val: selectedSub.payment_order_id },
+                  { label: 'VPA',                val: selectedSub.payment_vpa },
+                  { label: 'UTR',                val: selectedSub.payment_utr },
+                ].map(({ label, val }) => (
+                  <div key={label}>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</div>
+                    <div className="font-medium text-sm text-gray-900 dark:text-white truncate" title={val}>
+                      {val || 'N/A'}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Order ID</div>
-                  <div className="font-medium text-sm text-gray-900 dark:text-white truncate" title={selectedSub.payment_order_id}>
-                    {selectedSub.payment_order_id || 'N/A'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">VPA</div>
-                  <div className="font-medium text-sm text-gray-900 dark:text-white truncate" title={selectedSub.payment_vpa}>
-                    {selectedSub.payment_vpa || 'N/A'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">UTR</div>
-                  <div className="font-medium text-sm text-gray-900 dark:text-white truncate" title={selectedSub.payment_utr}>
-                    {selectedSub.payment_utr || 'N/A'}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Form Modal */}
+      {/* ── Form Modal (Create / Edit) ── */}
       <Modal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
@@ -512,123 +593,145 @@ const Subscriptions = () => {
       >
         <form id="subscription-form" onSubmit={handleFormSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
+
+            {/* Company */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Company</label>
-              <select
-                required
-                value={formData.company_id}
-                onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-              >
-                <option value="">Select a company</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <SelectField
+                options={companyOptions}
+                value={companyOptions.find((o) => String(o.value) === String(formData.company_id)) || null}
+                onChange={(opt) => setFormData({ ...formData, company_id: opt ? opt.value : '' })}
+                placeholder="Select a company"
+                isClearable
+              />
             </div>
 
+            {/* Package */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Package</label>
-              <select
-                required
-                value={formData.subscription_package_id}
-                onChange={(e) => setFormData({ ...formData, subscription_package_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-              >
-                <option value="">Select a package</option>
-                {packagesList.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+              <SelectField
+                options={packageOptions}
+                value={packageOptions.find((o) => String(o.value) === String(formData.subscription_package_id)) || null}
+                onChange={(opt) => {
+                  const newPkgId = opt ? opt.value : '';
+                  // When package changes, reset billing type to first allowed period of new package
+                  const newPkg = packagesList.find((p) => String(p.id) === String(newPkgId));
+                  const firstPeriod = newPkg?.accept_periods?.[0] || 'monthly';
+                  setFormData({
+                    ...formData,
+                    subscription_package_id: newPkgId,
+                    subscription_type: firstPeriod,
+                  });
+                }}
+                placeholder="Select a package"
+                isClearable
+              />
             </div>
 
+            {/* Billing Period — only shows periods the package accepts */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Billing Period</label>
-              <select
-                required
-                value={formData.subscription_type}
-                onChange={(e) => setFormData({ ...formData, subscription_type: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white capitalize"
-              >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="half_yearly">Half Yearly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </div>
-            
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Employee Limit</label>
-              <input
-                type="number"
-                min="1"
-                required
-                value={formData.employee_limit}
-                onChange={(e) => setFormData({ ...formData, employee_limit: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+              <SelectField
+                options={allowedBillingOptions}
+                value={BILLING_PERIOD_OPTIONS.find((o) => o.value === formData.subscription_type) || null}
+                onChange={(opt) =>
+                  setFormData({ ...formData, subscription_type: opt ? opt.value : 'monthly' })
+                }
+                placeholder="Select billing period"
+                isDisabled={!selectedPackage}
               />
             </div>
 
+            {/* Employee Limit — read-only, auto-filled from package */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Amount Paid (₹)</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400">
+                <Lock className="w-3.5 h-3.5" />
+                Employee Limit
+                <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500">(auto from package)</span>
+              </label>
               <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.amount_paid}
-                onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+                type="text"
+                readOnly
+                tabIndex={-1}
+                value={derivedEmployeeLimit !== '' ? `${derivedEmployeeLimit} employees max` : '—'}
+                className={readonlyClass}
               />
             </div>
 
+            {/* Amount Paid — read-only, auto-filled from package + billing period */}
+            <div className="space-y-1">
+              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400">
+                <Lock className="w-3.5 h-3.5" />
+                Amount (₹)
+                <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500">(auto from package &amp; period)</span>
+              </label>
+              <input
+                type="text"
+                readOnly
+                tabIndex={-1}
+                value={derivedAmountPaid !== '' ? `₹ ${derivedAmountPaid}` : '—'}
+                className={readonlyClass}
+              />
+            </div>
+
+            {/* Payment Status */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Payment Status</label>
-              <select
-                required
-                value={formData.payment_status}
-                onChange={(e) => setFormData({ ...formData, payment_status: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white capitalize"
-              >
-                <option value="pending">Pending</option>
-                <option value="success">Success</option>
-                <option value="failed">Failed</option>
-              </select>
+              <SelectField
+                options={PAYMENT_STATUS_OPTIONS}
+                value={PAYMENT_STATUS_OPTIONS.find((o) => o.value === formData.payment_status) || null}
+                onChange={(opt) =>
+                  setFormData({ ...formData, payment_status: opt ? opt.value : 'pending' })
+                }
+                placeholder="Select status"
+              />
             </div>
 
+            {/* Starts At */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Starts At</label>
-              <input
-                type="datetime-local"
-                required
-                value={formData.starts_at}
-                onChange={(e) => setFormData({ ...formData, starts_at: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
-              />
+              <div className={`rounded-lg border border-gray-200 dark:border-gray-700 ${inputClass} !px-0 !py-0 overflow-hidden`}>
+                <AdvancedDateFilter
+                  value={datetimeToPickerValue(formData.starts_at)}
+                  onChange={(val) =>
+                    setFormData({ ...formData, starts_at: isoDateToDatetime(val.date) })
+                  }
+                  placeholder="Select start date"
+                  tabOptions={['date']}
+                  buttonClassName="w-full px-4 py-2 text-sm text-gray-900 dark:text-white bg-transparent border-none outline-none"
+                />
+              </div>
             </div>
 
+            {/* Expires At */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Expires At</label>
-              <input
-                type="datetime-local"
-                required
-                value={formData.expires_at}
-                onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
-              />
+              <div className={`rounded-lg border border-gray-200 dark:border-gray-700 ${inputClass} !px-0 !py-0 overflow-hidden`}>
+                <AdvancedDateFilter
+                  value={datetimeToPickerValue(formData.expires_at)}
+                  onChange={(val) =>
+                    setFormData({ ...formData, expires_at: isoDateToDatetime(val.date) })
+                  }
+                  placeholder="Select expiry date"
+                  tabOptions={['date']}
+                  buttonClassName="w-full px-4 py-2 text-sm text-gray-900 dark:text-white bg-transparent border-none outline-none"
+                />
+              </div>
             </div>
-            
+
+            {/* Payment Reference */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Payment Reference</label>
               <input
                 type="text"
                 value={formData.payment_reference}
                 onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+                className={inputClass}
                 placeholder="Optional"
               />
             </div>
 
+            {/* Edit-only fields */}
             {selectedSub && (
               <>
                 <div className="space-y-1">
@@ -637,39 +740,40 @@ const Subscriptions = () => {
                     type="text"
                     value={formData.payment_order_id}
                     onChange={(e) => setFormData({ ...formData, payment_order_id: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+                    className={inputClass}
                     placeholder="Optional"
                   />
                 </div>
-                
+
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">VPA</label>
                   <input
                     type="text"
                     value={formData.payment_vpa}
                     onChange={(e) => setFormData({ ...formData, payment_vpa: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+                    className={inputClass}
                     placeholder="Optional"
                   />
                 </div>
-                
+
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">UTR</label>
                   <input
                     type="text"
                     value={formData.payment_utr}
                     onChange={(e) => setFormData({ ...formData, payment_utr: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
+                    className={inputClass}
                     placeholder="Optional"
                   />
                 </div>
               </>
             )}
 
+            {/* Active toggle */}
             <div className="md:col-span-2 flex items-center gap-3 mt-2">
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   className="sr-only peer"
                   checked={formData.is_active === 1}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })}
@@ -678,17 +782,15 @@ const Subscriptions = () => {
                 <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Active Subscription</span>
               </label>
             </div>
+
           </div>
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* ── Delete Confirmation Modal ── */}
       <Modal
         isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setDeleteTargetId(null);
-        }}
+        onClose={() => { setIsDeleteModalOpen(false); setDeleteTargetId(null); }}
         title="Confirm Deletion"
         icon={Trash2}
         size="sm"
