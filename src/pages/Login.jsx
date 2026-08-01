@@ -89,7 +89,13 @@ const Login = () => {
 
   const otpRefs = useRef([]);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const otp = otpDigits.join('');
 
