@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Companies from './pages/Companies';
 import Subscriptions from './pages/Subscriptions';
+import Packages from './pages/Packages';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './App.css';
@@ -33,6 +34,7 @@ function App() {
               <Route path="clients" element={<Users />} />
               <Route path="companies" element={<Companies />} />
               <Route path="subscriptions" element={<Subscriptions />} />
+              <Route path="packages" element={<Packages />} />
             </Route>
 
             {/* Catch all */}

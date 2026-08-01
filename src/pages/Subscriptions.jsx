@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Wallet, Activity, Plus, Eye, Edit2, Trash2, Calendar, FileText, CheckCircle, XCircle, Users as UsersIcon, Banknote } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import { API_BASE } from '../utils/config';
@@ -12,12 +12,15 @@ const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const isFetchingRef = useRef(false);
   
   // Modal state
   const [selectedSub, setSelectedSub] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const fetchSubscriptions = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const response = await apiCall('/subscriptions');
@@ -32,6 +35,7 @@ const Subscriptions = () => {
       console.error(error);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -192,6 +196,10 @@ const Subscriptions = () => {
           columns={columns}
           rowKey="id"
           getActions={getActions}
+          onRowClick={(row) => {
+            setSelectedSub(row);
+            setIsViewModalOpen(true);
+          }}
           accent="indigo"
           emptyState={
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">

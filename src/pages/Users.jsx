@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Users as UsersIcon, Activity, UserPlus, Eye, Edit2, Trash2, Mail, Phone, Calendar, Clock, Shield } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import { API_BASE } from '../utils/config';
@@ -12,12 +12,15 @@ const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const isFetchingRef = useRef(false);
   
   // Modal state
   const [selectedUser, setSelectedUser] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const fetchUsers = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const response = await apiCall('/users');
@@ -32,6 +35,7 @@ const Users = () => {
       console.error(error);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -187,6 +191,10 @@ const Users = () => {
           columns={columns}
           rowKey="id"
           getActions={getActions}
+          onRowClick={(row) => {
+            setSelectedUser(row);
+            setIsViewModalOpen(true);
+          }}
           accent="blue"
           emptyState={
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">

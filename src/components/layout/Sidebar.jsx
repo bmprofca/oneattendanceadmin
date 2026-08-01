@@ -65,6 +65,11 @@ const Sidebar = ({
       label: "Subscriptions",
       path: "/subscriptions",
     },
+    {
+      icon: Package,
+      label: "Packages",
+      path: "/packages",
+    },
   ];
 
   const menuItems = allMenuItems.filter((item) => {
