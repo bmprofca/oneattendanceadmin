@@ -25,15 +25,12 @@ const modalVariants = {
   },
 };
 
-const Modal = ({ isOpen, onClose, title, icon: Icon, children, onConfirm, confirmText = 'Confirm', footer, size = 'md', className = '', contentClassName = 'p-4', closeText = 'Close', hideCloseButton = false }) => {
+const Modal = ({ isOpen, onClose, title, icon: Icon, children, onConfirm, confirmText = 'Confirm', footer, size = 'lg', className = '', contentClassName = 'p-4', closeText = 'Close', hideCloseButton = false }) => {
   const sizeClasses = {
-    sm: 'max-w-md max-h-[50vh]',
-    md: 'max-w-lg max-h-[60vh]',
-    lg: 'max-w-xl max-h-[70vh]',
-    xl: 'max-w-2xl max-h-[75vh]',
-    '2xl': 'max-w-3xl max-h-[80vh]',
-    '3xl': 'max-w-4xl max-h-[85vh]',
-    '4xl': 'max-w-5xl max-h-[90vh]',
+    sm: 'max-w-md max-h-[65vh]',
+    md: 'max-w-lg max-h-[70vh]',
+    lg: 'max-w-2xl max-h-[75vh]', 
+    xl: 'max-w-3xl max-h-[80vh]',
     full: 'max-w-full max-h-[92vh]',
   };
 
