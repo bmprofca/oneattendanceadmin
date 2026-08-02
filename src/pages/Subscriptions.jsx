@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Wallet, Activity, Plus, Eye, Edit2, Trash2, Calendar, FileText, Users as UsersIcon, Lock } from 'lucide-react';
+import { Search, Wallet, Activity, Plus, Eye, Edit2, Trash2, Calendar, FileText, Users as UsersIcon, Lock, Bell, CheckCircle, AlertTriangle } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import ManagementTable from '../components/common/ManagementTable';
 import Modal from '../components/common/Modal';
@@ -97,6 +97,11 @@ const Subscriptions = () => {
   // Delete Modal state
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Notify Modal state
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
+  const [notifyResult, setNotifyResult] = useState(null);
+  const [isNotifying, setIsNotifying] = useState(false);
 
   // ─── Derived: selected package object ────────────────────────────────────
   const selectedPackage = packagesList.find(
@@ -213,6 +218,25 @@ const Subscriptions = () => {
     } finally {
       setIsDeleteModalOpen(false);
       setDeleteTargetId(null);
+    }
+  };
+
+  const handleNotify = async (sub) => {
+    setIsNotifying(true);
+    try {
+      const response = await apiCall(`/subscriptions/${sub.id}/notify`, 'POST');
+      const data = await response.json();
+      if (data.success) {
+        setNotifyResult(data.data);
+        setIsNotifyModalOpen(true);
+        toast.success(data.message || 'WhatsApp notification sent successfully');
+      } else {
+        toast.error(data.message || 'Failed to send notification');
+      }
+    } catch (error) {
+      toast.error('Error sending WhatsApp notification');
+    } finally {
+      setIsNotifying(false);
     }
   };
 
@@ -392,6 +416,11 @@ const Subscriptions = () => {
       label: row.is_active ? 'Deactivate' : 'Activate',
       icon: <Activity className="w-4 h-4" />,
       onClick: () => handleToggleStatus(row)
+    },
+    {
+      label: 'Send WhatsApp Notification',
+      icon: <Bell className="w-4 h-4 text-green-500" />,
+      onClick: () => handleNotify(row)
     },
     {
       label: 'Delete',
@@ -801,6 +830,86 @@ const Subscriptions = () => {
         <p className="text-gray-600 dark:text-gray-300">
           Are you sure you want to delete this subscription? This action cannot be undone.
         </p>
+      </Modal>
+
+      {/* ── Notify Result Modal ── */}
+      <Modal
+        isOpen={isNotifyModalOpen}
+        onClose={() => { setIsNotifyModalOpen(false); setNotifyResult(null); }}
+        title="WhatsApp Notification Sent"
+        icon={Bell}
+        size="sm"
+        closeText="Close"
+      >
+        {notifyResult && (
+          <div className="space-y-4">
+            {notifyResult.type === 'expiry_alert' ? (
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle className="w-7 h-7 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white text-base">Expiry Alert Sent</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Subscription is still active</p>
+                </div>
+                <div className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl p-4 text-left space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Company</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.company_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Package</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.package_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Starts At</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.starts_at}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Expires At</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.expires_at}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Days Remaining</span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">{notifyResult.days_remaining} days</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-gray-500 dark:text-gray-400">Sent To</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.mobile_sent_to}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
+                  <AlertTriangle className="w-7 h-7 text-amber-500" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white text-base">Renewal Request Sent</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Subscription has already expired</p>
+                </div>
+                <div className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl p-4 text-left space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Company</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.company_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Package</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.package_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Expired On</span>
+                    <span className="font-semibold text-red-600 dark:text-red-400">{notifyResult.expired_on}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-gray-500 dark:text-gray-400">Sent To</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.mobile_sent_to}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );
