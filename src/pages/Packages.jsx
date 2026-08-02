@@ -27,14 +27,14 @@ const Packages = () => {
   const [limit, setLimit] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const isFetchingRef = useRef(false);
-  
+
   // Modal state
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Delete Modal state
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -153,7 +153,7 @@ const Packages = () => {
     try {
       const url = selectedPackage ? `/packages/${selectedPackage.id}` : '/packages';
       const method = selectedPackage ? 'PUT' : 'POST';
-      
+
       const payload = { ...formData };
       payload.min_employee_count = parseInt(payload.min_employee_count);
       payload.max_employee_count = parseInt(payload.max_employee_count);
@@ -161,9 +161,9 @@ const Packages = () => {
       payload.quarterly_price = parseFloat(payload.quarterly_price || 0);
       payload.half_yearly_price = parseFloat(payload.half_yearly_price || 0);
       payload.yearly_price = parseFloat(payload.yearly_price || 0);
-      
+
       const response = await apiCall(url, method, payload);
-      
+
       const data = await response.json();
       if (data.success) {
         toast.success(selectedPackage ? 'Package updated successfully' : 'Package created successfully');
@@ -190,7 +190,7 @@ const Packages = () => {
   };
 
   const getStatusColor = (isActive) => {
-    return isActive 
+    return isActive
       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
       : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
   };
@@ -293,7 +293,7 @@ const Packages = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
           <div className="relative w-full sm:w-72 group">
@@ -327,7 +327,7 @@ const Packages = () => {
             </div>
           }
         />
-        
+
         <Pagination
           currentPage={page}
           totalItems={totalItems}
@@ -409,7 +409,7 @@ const Packages = () => {
                 ))}
               </div>
             </div>
-            
+
             {selectedPackage.created_at && (
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-4">
                 <Calendar className="w-3 h-3" />
@@ -461,7 +461,7 @@ const Packages = () => {
                 placeholder="e.g. Pro Tier"
               />
             </div>
-            
+
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Min Employees</label>
               <input
@@ -473,7 +473,7 @@ const Packages = () => {
                 className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
               />
             </div>
-            
+
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Employees</label>
               <input
@@ -556,8 +556,8 @@ const Packages = () => {
 
             <div className="md:col-span-2 flex items-center gap-3 mt-2">
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   className="sr-only peer"
                   checked={formData.is_active === 1}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })}

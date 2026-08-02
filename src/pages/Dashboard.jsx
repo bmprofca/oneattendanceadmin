@@ -5,7 +5,7 @@ import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
 
 const StatCard = ({ title, value, icon: Icon, trend, isPositive }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
     <div className="flex items-center justify-between mb-4">
       <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
         <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -108,7 +108,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Recent Activity</h2>
         <div className="space-y-6">
           {recentActivities.length > 0 ? (

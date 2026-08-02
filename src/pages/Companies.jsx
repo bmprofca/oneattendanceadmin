@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Briefcase, Activity, Plus, Clock, Eye, Edit2, Trash2, Mail, Phone, Calendar, MapPin, FileText } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import { API_BASE } from '../utils/config';
 import ManagementTable from '../components/common/ManagementTable';
-import ActionCard from '../components/common/ActionCard';
-import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
 import Pagination from '../components/common/PaginationComponent';
 
 const Companies = () => {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,10 +17,6 @@ const Companies = () => {
   const [limit, setLimit] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const isFetchingRef = useRef(false);
-  
-  // Modal state
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const fetchCompanies = async () => {
     if (isFetchingRef.current) return;
@@ -58,7 +54,7 @@ const Companies = () => {
   }, [page, limit, searchTerm]);
 
   const getStatusColor = (isActive) => {
-    return isActive 
+    return isActive
       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
       : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
   };
@@ -77,7 +73,7 @@ const Companies = () => {
       render: (row) => (
         <div className="flex items-center gap-3">
           {row.logo_url ? (
-            <img 
+            <img
               src={getImageUrl(row.logo_url)}
               alt={row.name}
               className="w-10 h-10 rounded-lg object-cover shadow-sm border border-gray-100 dark:border-gray-700"
@@ -141,10 +137,7 @@ const Companies = () => {
     {
       label: 'View Details',
       icon: <Eye className="w-4 h-4" />,
-      onClick: () => {
-        setSelectedCompany(row);
-        setIsViewModalOpen(true);
-      }
+      onClick: () => navigate(`/companies/${row.id}`)
     }
   ];
 
@@ -158,7 +151,7 @@ const Companies = () => {
         <RefreshButton onClick={fetchCompanies} loading={loading} />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
           <div className="relative w-full sm:w-72 group">
@@ -173,7 +166,7 @@ const Companies = () => {
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none text-sm text-gray-800 dark:text-white"
             />
           </div>
-          
+
         </div>
 
         {/* Table */}
@@ -182,10 +175,7 @@ const Companies = () => {
           columns={columns}
           rowKey="id"
           getActions={getActions}
-          onRowClick={(row) => {
-            setSelectedCompany(row);
-            setIsViewModalOpen(true);
-          }}
+          onRowClick={(row) => navigate(`/companies/${row.id}`)}
           accent="indigo"
           emptyState={
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -193,7 +183,7 @@ const Companies = () => {
             </div>
           }
         />
-        
+
         <Pagination
           currentPage={page}
           totalItems={totalItems}
@@ -202,117 +192,6 @@ const Companies = () => {
           onLimitChange={setLimit}
         />
       </div>
-
-      {/* View Company Modal */}
-      <Modal
-        isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        title="Company Details"
-        icon={Briefcase}
-        size="lg"
-        closeText="Close"
-      >
-        {selectedCompany && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              {selectedCompany.logo_url ? (
-                 <img 
-                 src={getImageUrl(selectedCompany.logo_url)}
-                 alt={selectedCompany.name}
-                 className="w-20 h-20 rounded-xl object-cover shadow-md border-2 border-gray-100 dark:border-gray-700"
-                 onError={(e) => {
-                   e.target.onerror = null;
-                   e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(selectedCompany.name || 'C') + '&size=128&background=random';
-                 }}
-               />
-              ) : (
-                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold shadow-md border-2 border-gray-100 dark:border-gray-700">
-                  {selectedCompany.name ? selectedCompany.name.charAt(0).toUpperCase() : 'C'}
-                </div>
-              )}
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedCompany.name}</h3>
-                <p className="text-gray-500 dark:text-gray-400 font-medium text-sm">
-                  {selectedCompany.legal_name || 'No Legal Name'}
-                </p>
-                <span className={`inline-block mt-2 px-2.5 py-1 text-xs font-semibold rounded-full border border-transparent ${getStatusColor(selectedCompany.is_active)}`}>
-                  {selectedCompany.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Owner Information</h4>
-              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                  <Mail className="w-4 h-4 text-blue-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{selectedCompany.owner_name || 'Owner'}</div>
-                  <div className="font-medium">{selectedCompany.owner_email || 'N/A'}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                  <Phone className="w-4 h-4 text-green-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Phone Number</div>
-                  <div className="font-medium">{selectedCompany.owner_phone || 'N/A'}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Company Details</h4>
-              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                  <FileText className="w-4 h-4 text-orange-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">GST Number</div>
-                  <div className="font-medium">{selectedCompany.gst_no || 'Not Provided'}</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm shrink-0">
-                  <MapPin className="w-4 h-4 text-red-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Address</div>
-                  <div className="font-medium">
-                    {[selectedCompany.address_line1, selectedCompany.address_line2].filter(Boolean).join(', ')}<br />
-                    {[selectedCompany.city, selectedCompany.state, selectedCompany.postal_code, selectedCompany.country].filter(Boolean).join(', ')}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Created Date</div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {new Date(selectedCompany.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
-                <Clock className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Last Updated</div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {new Date(selectedCompany.updated_at).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

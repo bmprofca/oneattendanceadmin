@@ -14,18 +14,18 @@ import { apiCall } from '../utils/apiCall';
 import SelectField from '../components/common/SelectField';
 
 const COUNTRY_CODE_OPTIONS = [
-  { value: '91',  label: '🇮🇳 +91' },
-  { value: '1',   label: '🇺🇸 +1' },
-  { value: '44',  label: '🇬🇧 +44' },
-  { value: '61',  label: '🇦🇺 +61' },
+  { value: '91', label: '🇮🇳 +91' },
+  { value: '1', label: '🇺🇸 +1' },
+  { value: '44', label: '🇬🇧 +44' },
+  { value: '61', label: '🇦🇺 +61' },
   { value: '971', label: '🇦🇪 +971' },
-  { value: '65',  label: '🇸🇬 +65' },
-  { value: '60',  label: '🇲🇾 +60' },
-  { value: '64',  label: '🇳🇿 +64' },
-  { value: '27',  label: '🇿🇦 +27' },
-  { value: '49',  label: '🇩🇪 +49' },
-  { value: '33',  label: '🇫🇷 +33' },
-  { value: '81',  label: '🇯🇵 +81' },
+  { value: '65', label: '🇸🇬 +65' },
+  { value: '60', label: '🇲🇾 +60' },
+  { value: '64', label: '🇳🇿 +64' },
+  { value: '27', label: '🇿🇦 +27' },
+  { value: '49', label: '🇩🇪 +49' },
+  { value: '33', label: '🇫🇷 +33' },
+  { value: '81', label: '🇯🇵 +81' },
 ];
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -34,20 +34,18 @@ const RESEND_SECONDS = 30;
 const StepDot = ({ active, done, label }) => (
   <div className="flex items-center gap-2">
     <div
-      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono font-semibold border-2 transition-colors duration-300 ${
-        done
+      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono font-semibold border-2 transition-colors duration-300 ${done
           ? 'bg-[var(--signal)] border-[var(--signal)] text-white'
           : active
-          ? 'border-[var(--signal)] text-[var(--signal)]'
-          : 'border-[var(--line)] text-[var(--text-low)]'
-      }`}
+            ? 'border-[var(--signal)] text-[var(--signal)]'
+            : 'border-[var(--line)] text-[var(--text-low)]'
+        }`}
     >
       {done ? <Check className="w-4 h-4" /> : label[0]}
     </div>
     <span
-      className={`text-sm hidden sm:inline font-medium ${
-        active || done ? 'text-[var(--text-hi)]' : 'text-[var(--text-low)]'
-      }`}
+      className={`text-sm hidden sm:inline font-medium ${active || done ? 'text-[var(--text-hi)]' : 'text-[var(--text-low)]'
+        }`}
     >
       {label}
     </span>
@@ -296,7 +294,7 @@ const Login = () => {
             <span className="absolute inset-0 rounded-full border-2 border-[var(--signal)]/30 ring-pulse" />
             <span className="absolute inset-0 rounded-full border-2 border-[var(--signal)]/30 ring-pulse ring-pulse-delay-1" />
             <span className="absolute inset-0 rounded-full border-2 border-[var(--signal)]/30 ring-pulse ring-pulse-delay-2" />
-            <div className="relative w-16 h-16 rounded-2xl bg-[var(--surface-0)] border border-[var(--line)] flex items-center justify-center shadow-[0_8px_30px_-8px_var(--signal-dim-strong)]">
+            <div className="relative w-16 h-16 rounded-xl bg-[var(--surface-0)] border border-[var(--line)] flex items-center justify-center shadow-[0_8px_30px_-8px_var(--signal-dim-strong)]">
               <Phone className="w-7 h-7 text-[var(--signal)]" />
             </div>
           </div>
@@ -338,9 +336,8 @@ const Login = () => {
             <StepDot active={step === 1} done={step === 2} label="Phone" />
             <div className="flex-1 h-1 bg-[var(--line)] rounded-full relative overflow-hidden">
               <div
-                className={`absolute inset-y-0 left-0 bg-[var(--signal)] rounded-full transition-all duration-500 ${
-                  step === 2 ? 'w-full' : 'w-0'
-                }`}
+                className={`absolute inset-y-0 left-0 bg-[var(--signal)] rounded-full transition-all duration-500 ${step === 2 ? 'w-full' : 'w-0'
+                  }`}
               />
             </div>
             <StepDot active={step === 2} done={false} label="Verify" />
@@ -361,7 +358,7 @@ const Login = () => {
             <div
               key={error}
               role="alert"
-              className="mb-5 flex items-start gap-2 p-3 rounded-2xl bg-[var(--danger-dim)] border border-[var(--danger)]/20 text-[var(--danger)] text-sm font-medium anim-shake"
+              className="mb-5 flex items-start gap-2 p-3 rounded-xl bg-[var(--danger-dim)] border border-[var(--danger)]/20 text-[var(--danger)] text-sm font-medium anim-shake"
             >
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
@@ -431,7 +428,7 @@ const Login = () => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                       placeholder="9876543210"
-                      className="w-full h-[46px] pl-12 pr-4 bg-[var(--surface-1)] border-2 border-[var(--line)] rounded-2xl outline-none text-[var(--text-hi)] text-base font-mono tracking-wide placeholder:text-[var(--text-low)] focus:border-[var(--signal)] focus:bg-[var(--surface-0)] focus:shadow-[0_0_0_4px_var(--signal-dim)] transition-all duration-200"
+                      className="w-full h-[46px] pl-12 pr-4 bg-[var(--surface-1)] border-2 border-[var(--line)] rounded-xl outline-none text-[var(--text-hi)] text-base font-mono tracking-wide placeholder:text-[var(--text-low)] focus:border-[var(--signal)] focus:bg-[var(--surface-0)] focus:shadow-[0_0_0_4px_var(--signal-dim)] transition-all duration-200"
                     />
                   </div>
                 </div>
@@ -444,7 +441,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full group rounded-2xl py-3 text-base font-semibold text-white bg-[var(--signal)] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:brightness-110 shadow-[0_10px_30px_-10px_var(--signal-dim-strong)] flex items-center justify-center gap-2"
+                className="w-full group rounded-xl py-3 text-base font-semibold text-white bg-[var(--signal)] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:brightness-110 shadow-[0_10px_30px_-10px_var(--signal-dim-strong)] flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -491,11 +488,10 @@ const Login = () => {
                       value={digit}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                      className={`w-11 h-14 sm:w-14 sm:h-16 text-center text-2xl font-mono font-semibold rounded-xl bg-[var(--surface-1)] border-2 outline-none text-[var(--text-hi)] transition-all duration-200 ${
-                        digit
+                      className={`w-11 h-14 sm:w-14 sm:h-16 text-center text-2xl font-mono font-semibold rounded-xl bg-[var(--surface-1)] border-2 outline-none text-[var(--text-hi)] transition-all duration-200 ${digit
                           ? 'border-[var(--signal)] bg-[var(--surface-0)] shadow-[0_0_0_4px_var(--signal-dim)] anim-pop'
                           : 'border-[var(--line)] focus:border-[var(--signal)] focus:bg-[var(--surface-0)] focus:shadow-[0_0_0_4px_var(--signal-dim)]'
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
@@ -516,7 +512,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading || otp.length !== OTP_LENGTH}
-                className="w-full group rounded-2xl py-3 text-base font-semibold text-white bg-[var(--signal)] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:brightness-110 shadow-[0_10px_30px_-10px_var(--signal-dim-strong)] flex items-center justify-center gap-2"
+                className="w-full group rounded-xl py-3 text-base font-semibold text-white bg-[var(--signal)] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:brightness-110 shadow-[0_10px_30px_-10px_var(--signal-dim-strong)] flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

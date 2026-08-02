@@ -5,7 +5,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
+import UserProfile from './pages/UserProfile';
 import Companies from './pages/Companies';
+import CompanyProfile from './pages/CompanyProfile';
 import Subscriptions from './pages/Subscriptions';
 import Packages from './pages/Packages';
 import { AuthProvider } from './contexts/AuthContext';
@@ -33,7 +35,9 @@ function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="clients" element={<Users />} />
+              <Route path="clients/:id" element={<UserProfile />} />
               <Route path="companies" element={<Companies />} />
+              <Route path="companies/:id" element={<CompanyProfile />} />
               <Route path="subscriptions" element={<Subscriptions />} />
               <Route path="packages" element={<Packages />} />
             </Route>

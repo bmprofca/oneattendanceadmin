@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Users as UsersIcon, Activity, UserPlus, Eye, Edit2, Trash2, Mail, Phone, Calendar, Clock, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Filter, Users as UsersIcon, Activity, UserPlus, Eye, Edit2, Trash2 } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import { API_BASE } from '../utils/config';
 import ManagementTable from '../components/common/ManagementTable';
 import ActionCard from '../components/common/ActionCard';
-import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
 import Pagination from '../components/common/PaginationComponent';
 
 const Users = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,10 +18,6 @@ const Users = () => {
   const [limit, setLimit] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const isFetchingRef = useRef(false);
-  
-  // Modal state
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const fetchUsers = async () => {
     if (isFetchingRef.current) return;
@@ -58,7 +55,7 @@ const Users = () => {
   }, [page, limit, searchTerm]);
 
   const getStatusColor = (isActive) => {
-    return isActive 
+    return isActive
       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
       : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
   };
@@ -77,7 +74,7 @@ const Users = () => {
       render: (row) => (
         <div className="flex items-center gap-3">
           {row.profile_picture ? (
-            <img 
+            <img
               src={getImageUrl(row.profile_picture)}
               alt={row.name}
               className="w-10 h-10 rounded-full object-cover shadow-sm"
@@ -140,10 +137,7 @@ const Users = () => {
     {
       label: 'View Details',
       icon: <Eye className="w-4 h-4" />,
-      onClick: () => {
-        setSelectedUser(row);
-        setIsViewModalOpen(true);
-      }
+      onClick: () => navigate(`/clients/${row.id}`)
     }
   ];
 
@@ -157,7 +151,7 @@ const Users = () => {
         <RefreshButton onClick={fetchUsers} loading={loading} />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
           <div className="relative w-full sm:w-72 group">
@@ -172,7 +166,7 @@ const Users = () => {
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none text-sm text-gray-800 dark:text-white"
             />
           </div>
-          
+
         </div>
 
         {/* Table */}
@@ -181,10 +175,7 @@ const Users = () => {
           columns={columns}
           rowKey="id"
           getActions={getActions}
-          onRowClick={(row) => {
-            setSelectedUser(row);
-            setIsViewModalOpen(true);
-          }}
+          onRowClick={(row) => navigate(`/clients/${row.id}`)}
           accent="blue"
           emptyState={
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -192,7 +183,7 @@ const Users = () => {
             </div>
           }
         />
-        
+
         <Pagination
           currentPage={page}
           totalItems={totalItems}
@@ -201,100 +192,6 @@ const Users = () => {
           onLimitChange={setLimit}
         />
       </div>
-
-      {/* View User Modal */}
-      <Modal
-        isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        title="User Details"
-        icon={UsersIcon}
-        size="lg"
-        closeText="Close"
-      >
-        {selectedUser && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              {selectedUser.profile_picture ? (
-                 <img 
-                 src={getImageUrl(selectedUser.profile_picture)}
-                 alt={selectedUser.name}
-                 className="w-20 h-20 rounded-full object-cover shadow-md border-4 border-white dark:border-gray-700"
-                 onError={(e) => {
-                   e.target.onerror = null;
-                   e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(selectedUser.name || 'U') + '&size=128';
-                 }}
-               />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-3xl font-bold shadow-md border-4 border-white dark:border-gray-700">
-                  {selectedUser.name ? selectedUser.name.charAt(0).toUpperCase() : 'U'}
-                </div>
-              )}
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedUser.name}</h3>
-                <p className="text-indigo-600 dark:text-indigo-400 font-medium">
-                  {selectedUser.profession || (selectedUser.is_system_admin ? 'System Admin' : 'User')}
-                </p>
-                <span className={`inline-block mt-2 px-2.5 py-1 text-xs font-semibold rounded-full border border-transparent ${getStatusColor(selectedUser.is_active)}`}>
-                  {selectedUser.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                  <Mail className="w-4 h-4 text-blue-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Email Address</div>
-                  <div className="font-medium">{selectedUser.email || 'N/A'}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                  <Phone className="w-4 h-4 text-green-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Phone Number</div>
-                  <div className="font-medium">{selectedUser.phone || 'N/A'}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                  <Shield className="w-4 h-4 text-purple-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">System Admin</div>
-                  <div className="font-medium">{selectedUser.is_system_admin ? 'Yes' : 'No'}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Joined Date</div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {new Date(selectedUser.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
-                <Clock className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Last Login</div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString() : 'Never'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

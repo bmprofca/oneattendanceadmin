@@ -37,23 +37,23 @@ const datetimeToPickerValue = (datetimeStr) => {
 
 // Map subscription_type → package price field key
 const PERIOD_PRICE_KEY = {
-  monthly:     'monthly_price',
-  quarterly:   'quarterly_price',
+  monthly: 'monthly_price',
+  quarterly: 'quarterly_price',
   half_yearly: 'half_yearly_price',
-  yearly:      'yearly_price',
+  yearly: 'yearly_price',
 };
 
 const BILLING_PERIOD_OPTIONS = [
-  { value: 'monthly',     label: 'Monthly' },
-  { value: 'quarterly',   label: 'Quarterly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
   { value: 'half_yearly', label: 'Half Yearly' },
-  { value: 'yearly',      label: 'Yearly' },
+  { value: 'yearly', label: 'Yearly' },
 ];
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
   { value: 'success', label: 'Success' },
-  { value: 'failed',  label: 'Failed' },
+  { value: 'failed', label: 'Failed' },
 ];
 
 const initialFormData = {
@@ -286,9 +286,9 @@ const Subscriptions = () => {
       const payload = { ...formData };
       // Use derived values for read-only fields
       payload.employee_limit = parseInt(derivedEmployeeLimit) || parseInt(formData.employee_limit) || 0;
-      payload.amount_paid    = parseFloat(derivedAmountPaid)  || parseFloat(formData.amount_paid)  || 0;
-      payload.company_id                = parseInt(payload.company_id);
-      payload.subscription_package_id   = parseInt(payload.subscription_package_id);
+      payload.amount_paid = parseFloat(derivedAmountPaid) || parseFloat(formData.amount_paid) || 0;
+      payload.company_id = parseInt(payload.company_id);
+      payload.subscription_package_id = parseInt(payload.subscription_package_id);
 
       if (payload.starts_at) payload.starts_at = new Date(payload.starts_at).toISOString();
       if (payload.expires_at) payload.expires_at = new Date(payload.expires_at).toISOString();
@@ -319,20 +319,20 @@ const Subscriptions = () => {
     switch (status?.toLowerCase()) {
       case 'success': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400';
       case 'pending': return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400';
-      case 'failed':  return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
-      default:        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+      case 'failed': return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
     }
   };
 
   // react-select option arrays
-  const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }));
-  const packageOptions  = packagesList.map((p) => ({ value: p.id, label: p.name }));
+  const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
+  const packageOptions = packagesList.map((p) => ({ value: p.id, label: p.name }));
 
   // Allowed billing periods for the selected package (only those in accept_periods)
   const allowedBillingOptions = selectedPackage
     ? BILLING_PERIOD_OPTIONS.filter((opt) =>
-        selectedPackage.accept_periods?.includes(opt.value)
-      )
+      selectedPackage.accept_periods?.includes(opt.value)
+    )
     : BILLING_PERIOD_OPTIONS;
 
   // ─── Table columns ────────────────────────────────────────────────────────
@@ -456,7 +456,7 @@ const Subscriptions = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
           <div className="relative w-full sm:w-72 group">
@@ -577,9 +577,9 @@ const Subscriptions = () => {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: 'Payment Reference', val: selectedSub.payment_reference },
-                  { label: 'Order ID',           val: selectedSub.payment_order_id },
-                  { label: 'VPA',                val: selectedSub.payment_vpa },
-                  { label: 'UTR',                val: selectedSub.payment_utr },
+                  { label: 'Order ID', val: selectedSub.payment_order_id },
+                  { label: 'VPA', val: selectedSub.payment_vpa },
+                  { label: 'UTR', val: selectedSub.payment_utr },
                 ].map(({ label, val }) => (
                   <div key={label}>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</div>
