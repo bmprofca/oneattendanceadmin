@@ -5,6 +5,7 @@ import ManagementTable from '../components/common/ManagementTable';
 import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
+import Pagination from '../components/common/PaginationComponent';
 
 const initialFormData = {
   name: '',
@@ -22,6 +23,9 @@ const Packages = () => {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
   const isFetchingRef = useRef(false);
   
   // Modal state
@@ -40,10 +44,13 @@ const Packages = () => {
     isFetchingRef.current = true;
     setLoading(true);
     try {
-      const response = await apiCall('/packages');
+      const response = await apiCall(`/packages?page=${page}&limit=${limit}&search=${encodeURIComponent(searchTerm)}`);
       const data = await response.json();
       if (data.success) {
         setPackages(data.data || []);
+        if (data.meta) {
+          setTotalItems(data.meta.total || 0);
+        }
       } else {
         toast.error(data.message || 'Failed to fetch packages');
       }
@@ -57,8 +64,15 @@ const Packages = () => {
   };
 
   useEffect(() => {
-    fetchPackages();
-  }, []);
+    setPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPackages();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [page, limit, searchTerm]);
 
   const handleOpenCreate = () => {
     setSelectedPackage(null);
@@ -181,10 +195,6 @@ const Packages = () => {
       : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
   };
 
-  const filteredPackages = packages.filter(pkg => 
-    pkg.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const columns = [
     {
       key: 'name',
@@ -302,7 +312,7 @@ const Packages = () => {
 
         {/* Table */}
         <ManagementTable
-          rows={filteredPackages}
+          rows={packages}
           columns={columns}
           rowKey="id"
           getActions={getActions}
@@ -318,15 +328,13 @@ const Packages = () => {
           }
         />
         
-        {/* Pagination Dummy */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">
-          <span>Showing {filteredPackages.length > 0 ? 1 : 0} to {filteredPackages.length} of {packages.length} entries</span>
-          <div className="flex gap-1">
-            <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Prev</button>
-            <button className="px-3 py-1 rounded bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors">1</button>
-            <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Next</button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalItems={totalItems}
+          itemsPerPage={limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
       </div>
 
       {/* View Package Modal */}

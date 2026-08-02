@@ -7,11 +7,15 @@ import ActionCard from '../components/common/ActionCard';
 import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
+import Pagination from '../components/common/PaginationComponent';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
   const isFetchingRef = useRef(false);
   
   // Modal state
@@ -23,10 +27,13 @@ const Users = () => {
     isFetchingRef.current = true;
     setLoading(true);
     try {
-      const response = await apiCall('/users');
+      const response = await apiCall(`/users?page=${page}&limit=${limit}&search=${encodeURIComponent(searchTerm)}`);
       const data = await response.json();
       if (data.success) {
         setUsers(data.data || []);
+        if (data.meta) {
+          setTotalItems(data.meta.total || 0);
+        }
       } else {
         toast.error(data.message || 'Failed to fetch users');
       }
@@ -40,8 +47,15 @@ const Users = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    setPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [page, limit, searchTerm]);
 
   const getStatusColor = (isActive) => {
     return isActive 
@@ -55,11 +69,6 @@ const Users = () => {
     const baseUrl = API_BASE.replace(/\/admin\/?$/, '');
     return `${baseUrl}${path}`;
   };
-
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const columns = [
     {
@@ -168,7 +177,7 @@ const Users = () => {
 
         {/* Table */}
         <ManagementTable
-          rows={filteredUsers}
+          rows={users}
           columns={columns}
           rowKey="id"
           getActions={getActions}
@@ -184,15 +193,13 @@ const Users = () => {
           }
         />
         
-        {/* Pagination Dummy */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">
-          <span>Showing {filteredUsers.length > 0 ? 1 : 0} to {filteredUsers.length} of {users.length} entries</span>
-          <div className="flex gap-1">
-            <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Prev</button>
-            <button className="px-3 py-1 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors">1</button>
-            <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Next</button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalItems={totalItems}
+          itemsPerPage={limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
       </div>
 
       {/* View User Modal */}

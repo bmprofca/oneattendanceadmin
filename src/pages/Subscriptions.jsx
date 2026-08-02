@@ -7,6 +7,7 @@ import RefreshButton from '../components/common/RefreshButton';
 import SelectField from '../components/common/SelectField';
 import AdvancedDateFilter from '../components/common/AdvancedDateFilter';
 import { toast } from 'react-hot-toast';
+import Pagination from '../components/common/PaginationComponent';
 
 const formatDateForInput = (dateString) => {
   if (!dateString) return '';
@@ -83,6 +84,9 @@ const Subscriptions = () => {
   const [packagesList, setPackagesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
   const isFetchingRef = useRef(false);
   const dependenciesLoadedRef = useRef(false);
   const isFetchingDepsRef = useRef(false);
@@ -122,10 +126,13 @@ const Subscriptions = () => {
     isFetchingRef.current = true;
     setLoading(true);
     try {
-      const response = await apiCall('/subscriptions');
+      const response = await apiCall(`/subscriptions?page=${page}&limit=${limit}&search=${encodeURIComponent(searchTerm)}`);
       const data = await response.json();
       if (data.success) {
         setSubscriptions(data.data || []);
+        if (data.meta) {
+          setTotalItems(data.meta.total || 0);
+        }
       } else {
         toast.error(data.message || 'Failed to fetch subscriptions');
       }
@@ -159,8 +166,15 @@ const Subscriptions = () => {
   };
 
   useEffect(() => {
-    fetchSubscriptions();
-  }, []);
+    setPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSubscriptions();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [page, limit, searchTerm]);
 
   // Lazily load companies + packages only when the form modal needs them
   const ensureDependenciesLoaded = async () => {
@@ -321,14 +335,6 @@ const Subscriptions = () => {
       )
     : BILLING_PERIOD_OPTIONS;
 
-  const filteredSubscriptions = subscriptions.filter(
-    (sub) =>
-      sub.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.company_legal_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.package_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.payment_reference?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   // ─── Table columns ────────────────────────────────────────────────────────
   const columns = [
     {
@@ -469,7 +475,7 @@ const Subscriptions = () => {
 
         {/* Table */}
         <ManagementTable
-          rows={filteredSubscriptions}
+          rows={subscriptions}
           columns={columns}
           rowKey="id"
           getActions={getActions}
@@ -482,17 +488,13 @@ const Subscriptions = () => {
           }
         />
 
-        {/* Pagination Dummy */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">
-          <span>
-            Showing {filteredSubscriptions.length > 0 ? 1 : 0} to {filteredSubscriptions.length} of {subscriptions.length} entries
-          </span>
-          <div className="flex gap-1">
-            <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Prev</button>
-            <button className="px-3 py-1 rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors">1</button>
-            <button className="px-3 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50" disabled>Next</button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalItems={totalItems}
+          itemsPerPage={limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
       </div>
 
       {/* ── View Subscription Modal ── */}
