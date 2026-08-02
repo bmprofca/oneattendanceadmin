@@ -10,6 +10,7 @@ import Subscriptions from './pages/Subscriptions';
 import Packages from './pages/Packages';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
+        <Toaster position="top-right" />
       </AuthProvider>
     </ThemeProvider>
   );
