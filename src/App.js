@@ -11,6 +11,8 @@ import CompanyProfile from './pages/CompanyProfile';
 import Subscriptions from './pages/Subscriptions';
 import Packages from './pages/Packages';
 import CustomPackages from './pages/CustomPackages';
+import AlertLogs from './pages/AlertLogs';
+import AlertConfig from './pages/AlertConfig';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from 'react-hot-toast';
@@ -40,6 +42,8 @@ function App() {
               <Route path="companies" element={<Companies />} />
               <Route path="companies/:id" element={<CompanyProfile />} />
               <Route path="subscriptions" element={<Subscriptions />} />
+              <Route path="subscriptions/alert-logs" element={<AlertLogs />} />
+              <Route path="subscriptions/alert-config" element={<AlertConfig />} />
               <Route path="packages" element={<Packages />} />
               <Route path="custom-packages" element={<CustomPackages />} />
             </Route>

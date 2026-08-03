@@ -24,12 +24,12 @@ export default function RefreshButton({
       disabled={loading}
       title={title}
       className={joinClasses(
-        'inline-flex items-center justify-center gap-1 rounded-lg border-2 border-gray-600 dark:border-blue-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm transition-all duration-200 hover:bg-slate-50 dark:hover:bg-gray-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60',
+        'inline-flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 dark:text-blue-400 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 rounded-lg shadow-sm transition-colors',
         className
       )}
       {...rest}
     >
-     <RefreshCw size={14} />
+      <RefreshCw size={14} />
       <span className="whitespace-nowrap">{children}</span>
     </motion.button>
   );

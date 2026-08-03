@@ -286,7 +286,7 @@ const Packages = () => {
         </div>
         <div className="flex items-center gap-2">
           <RefreshButton onClick={fetchPackages} loading={loading} />
-          <button onClick={handleOpenCreate} className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
+          <button onClick={handleOpenCreate} className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 rounded-lg shadow-sm transition-colors">
             <Plus className="w-4 h-4" />
             Create
           </button>
@@ -440,7 +440,7 @@ const Packages = () => {
               type="submit"
               form="package-form"
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 dark:text-blue-400 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting && <Activity className="w-4 h-4 animate-spin" />}
               {selectedPackage ? 'Save Changes' : 'Create Package'}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Wallet, Activity, Plus, Eye, Edit2, Trash2, Calendar, FileText, Users as UsersIcon, Lock, Bell, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Search, Wallet, Activity, Plus, Eye, Edit2, Trash2, Calendar, FileText, Users as UsersIcon, Lock, Bell, CheckCircle, AlertTriangle, Settings, List } from 'lucide-react';
 import apiCall from '../utils/apiCall';
 import ManagementTable from '../components/common/ManagementTable';
+import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import SelectField from '../components/common/SelectField';
@@ -100,10 +101,8 @@ const Subscriptions = () => {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // Notify Modal state
-  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
-  const [notifyResult, setNotifyResult] = useState(null);
-  const [isNotifying, setIsNotifying] = useState(false);
+  // Alert Modals state
+  const navigate = useNavigate();
 
   // ─── Derived: selected package object ────────────────────────────────────
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -117,6 +116,13 @@ const Subscriptions = () => {
     : '';
 
   // ─── API helpers ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSubscriptions();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [page, limit, searchTerm]);
+
   const fetchSubscriptions = async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
@@ -192,25 +198,6 @@ const Subscriptions = () => {
     } finally {
       setIsDeleteModalOpen(false);
       setDeleteTargetId(null);
-    }
-  };
-
-  const handleNotify = async (sub) => {
-    setIsNotifying(true);
-    try {
-      const response = await apiCall(`/subscriptions/${sub.id}/notify`, 'POST');
-      const data = await response.json();
-      if (data.success) {
-        setNotifyResult(data.data);
-        setIsNotifyModalOpen(true);
-        toast.success(data.message || 'WhatsApp notification sent successfully');
-      } else {
-        toast.error(data.message || 'Failed to send notification');
-      }
-    } catch (error) {
-      toast.error('Error sending WhatsApp notification');
-    } finally {
-      setIsNotifying(false);
     }
   };
 
@@ -380,11 +367,6 @@ const Subscriptions = () => {
       onClick: () => handleToggleStatus(row)
     },
     {
-      label: 'Send WhatsApp Notification',
-      icon: <Bell className="w-4 h-4 text-green-500" />,
-      onClick: () => handleNotify(row)
-    },
-    {
       label: 'Delete',
       icon: <Trash2 className="w-4 h-4 text-red-500" />,
       className: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30',
@@ -403,8 +385,22 @@ const Subscriptions = () => {
         <div className="flex items-center gap-2">
           <RefreshButton onClick={fetchSubscriptions} loading={loading} />
           <button
+            onClick={() => navigate('/subscriptions/alert-config')}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-100 hover:bg-red-200 dark:text-red-400 dark:bg-red-500/20 dark:hover:bg-red-500/30 rounded-lg shadow-sm transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+            Alerts
+          </button>
+          <button
+            onClick={() => navigate('/subscriptions/alert-logs')}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 dark:text-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 rounded-lg shadow-sm transition-colors"
+          >
+            <List className="w-4 h-4" />
+            Logs
+          </button>
+          <button
             onClick={handleOpenCreate}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 rounded-lg shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
             Create
@@ -570,7 +566,7 @@ const Subscriptions = () => {
               type="submit"
               form="subscription-form"
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting && <Activity className="w-4 h-4 animate-spin" />}
               {selectedSub ? 'Save Changes' : 'Create Subscription'}
@@ -835,85 +831,6 @@ const Subscriptions = () => {
         </p>
       </Modal>
 
-      {/* ── Notify Result Modal ── */}
-      <Modal
-        isOpen={isNotifyModalOpen}
-        onClose={() => { setIsNotifyModalOpen(false); setNotifyResult(null); }}
-        title="WhatsApp Notification Sent"
-        icon={Bell}
-        size="sm"
-        closeText="Close"
-      >
-        {notifyResult && (
-          <div className="space-y-4">
-            {notifyResult.type === 'expiry_alert' ? (
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
-                  <CheckCircle className="w-7 h-7 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white text-base">Expiry Alert Sent</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Subscription is still active</p>
-                </div>
-                <div className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl p-4 text-left space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Company</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.company_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Package</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.package_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Starts At</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.starts_at}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Expires At</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.expires_at}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Days Remaining</span>
-                    <span className="font-semibold text-amber-600 dark:text-amber-400">{notifyResult.days_remaining} days</span>
-                  </div>
-                  <div className="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-500 dark:text-gray-400">Sent To</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.mobile_sent_to}</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
-                  <AlertTriangle className="w-7 h-7 text-amber-500" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white text-base">Renewal Request Sent</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Subscription has already expired</p>
-                </div>
-                <div className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl p-4 text-left space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Company</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.company_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Package</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.package_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Expired On</span>
-                    <span className="font-semibold text-red-600 dark:text-red-400">{notifyResult.expired_on}</span>
-                  </div>
-                  <div className="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-500 dark:text-gray-400">Sent To</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{notifyResult.mobile_sent_to}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

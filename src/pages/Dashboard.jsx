@@ -95,7 +95,7 @@ const Dashboard = () => {
         </div>
         <div className="flex items-center gap-3">
           <RefreshButton onClick={fetchDashboard} loading={loading} />
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-blue-500/20 flex items-center gap-2 hidden sm:flex">
+          <button className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2 hidden sm:flex">
             <Activity className="w-4 h-4" />
             Generate Report
           </button>
