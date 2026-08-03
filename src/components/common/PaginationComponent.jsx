@@ -47,6 +47,26 @@ const Pagination = ({
                             menuPlacement="auto"
                             isSearchable={false}
                             className="min-w-[80px]"
+                            styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    minHeight: '30px',
+                                    height: '30px'
+                                }),
+                                valueContainer: (base) => ({
+                                    ...base,
+                                    padding: '0 8px',
+                                }),
+                                input: (base) => ({
+                                    ...base,
+                                    margin: '0',
+                                    padding: '0'
+                                }),
+                                indicatorsContainer: (base) => ({
+                                    ...base,
+                                    height: '30px'
+                                })
+                            }}
                         />
                     </div>
                 </div>
