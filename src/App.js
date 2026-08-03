@@ -10,6 +10,7 @@ import Companies from './pages/Companies';
 import CompanyProfile from './pages/CompanyProfile';
 import Subscriptions from './pages/Subscriptions';
 import Packages from './pages/Packages';
+import CustomPackages from './pages/CustomPackages';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from 'react-hot-toast';
@@ -40,6 +41,7 @@ function App() {
               <Route path="companies/:id" element={<CompanyProfile />} />
               <Route path="subscriptions" element={<Subscriptions />} />
               <Route path="packages" element={<Packages />} />
+              <Route path="custom-packages" element={<CustomPackages />} />
             </Route>
 
             {/* Catch all */}

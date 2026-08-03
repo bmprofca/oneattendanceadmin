@@ -385,7 +385,12 @@ const SubscriptionsTab = ({ userId }) => {
       label: 'Package',
       render: (row) => (
         <div>
-          <div className="font-medium text-gray-900 dark:text-white">{row.package_name || '—'}</div>
+          <div className="flex items-center gap-2">
+            <div className="font-medium text-gray-900 dark:text-white">{row.package_name || '—'}</div>
+            {row.package_type === 'custom' && (
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Custom</span>
+            )}
+          </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{row.subscription_type} • Up to {row.employee_limit} employees</div>
         </div>
       ),

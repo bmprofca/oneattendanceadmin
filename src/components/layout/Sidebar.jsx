@@ -70,6 +70,11 @@ const Sidebar = ({
       label: "Packages",
       path: "/packages",
     },
+    {
+      icon: Gift,
+      label: "Custom Packages",
+      path: "/custom-packages",
+    },
   ];
 
   const menuItems = allMenuItems.filter((item) => {

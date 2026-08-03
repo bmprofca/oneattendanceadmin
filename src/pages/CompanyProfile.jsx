@@ -177,6 +177,35 @@ const OverviewTab = ({ company, companyId }) => {
         </div>
       </div>
 
+      {/* Active Subscription */}
+      {company.active_subscription && (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm lg:col-span-2">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-5 flex items-center gap-2">
+            <Package className="w-4 h-4" /> Active Subscription
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+              <div className="text-xs text-indigo-800 dark:text-indigo-300 uppercase tracking-wider font-semibold mb-1">Plan</div>
+              <div className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                {company.active_subscription.package_name}
+                {company.active_subscription.package_type === 'custom' && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Custom</span>
+                )}
+              </div>
+              <div className="text-xs text-indigo-600 dark:text-indigo-400 capitalize mt-0.5">{company.active_subscription.subscription_type}</div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+               <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold mb-1">Employee Limit</div>
+               <div className="text-lg font-bold text-gray-900 dark:text-white">{company.active_subscription.employee_limit} <span className="text-sm font-normal text-gray-500">Max</span></div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+               <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold mb-1">Expires On</div>
+               <div className="text-lg font-bold text-gray-900 dark:text-white">{fmt.date(company.active_subscription.expires_at)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Attendance Overview */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm lg:col-span-2">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-5 flex items-center gap-2">
@@ -361,7 +390,12 @@ const SubscriptionsTab = ({ companyId }) => {
       label: 'Package',
       render: (row) => (
         <div>
-          <div className="font-medium text-gray-900 dark:text-white">{row.package_name || '—'}</div>
+          <div className="flex items-center gap-2">
+            <div className="font-medium text-gray-900 dark:text-white">{row.package_name || '—'}</div>
+            {row.package_type === 'custom' && (
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Custom</span>
+            )}
+          </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{row.subscription_type} • Up to {row.employee_limit} employees</div>
         </div>
       ),

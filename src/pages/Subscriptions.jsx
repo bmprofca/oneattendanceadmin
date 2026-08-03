@@ -58,7 +58,8 @@ const PAYMENT_STATUS_OPTIONS = [
 
 const initialFormData = {
   company_id: '',
-  subscription_package_id: '',
+  package_type: 'normal',
+  package_id: '',
   employee_limit: '',
   subscription_type: 'monthly',
   amount_paid: '',
@@ -82,6 +83,7 @@ const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [packagesList, setPackagesList] = useState([]);
+  const [customPackagesList, setCustomPackagesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
@@ -108,8 +110,9 @@ const Subscriptions = () => {
   const [isNotifying, setIsNotifying] = useState(false);
 
   // ─── Derived: selected package object ────────────────────────────────────
-  const selectedPackage = packagesList.find(
-    (p) => String(p.id) === String(formData.subscription_package_id)
+  const currentPackages = formData.package_type === 'custom' ? customPackagesList : packagesList;
+  const selectedPackage = currentPackages.find(
+    (p) => String(p.id) === String(formData.package_id)
   ) || null;
 
   // Auto-derive employee_limit and amount_paid from package + billing period
@@ -149,14 +152,18 @@ const Subscriptions = () => {
     if (isFetchingDepsRef.current) return;
     isFetchingDepsRef.current = true;
     try {
-      const [compRes, packRes] = await Promise.all([
+      const [compRes, packRes, customPackRes] = await Promise.all([
         apiCall('/companies'),
-        apiCall('/packages')
+        apiCall('/packages'),
+        apiCall('/custom-packages')
       ]);
       const compData = await compRes.json();
       const packData = await packRes.json();
+      const customPackData = await customPackRes.json();
+      
       if (compData.success) setCompanies(compData.data || []);
       if (packData.success) setPackagesList(packData.data || []);
+      if (customPackData.success) setCustomPackagesList(customPackData.data || []);
       dependenciesLoadedRef.current = true;
     } catch (error) {
       console.error('Error fetching dependencies', error);
@@ -194,7 +201,8 @@ const Subscriptions = () => {
     setSelectedSub(sub);
     setFormData({
       company_id: sub.company_id,
-      subscription_package_id: sub.subscription_package_id,
+      package_type: sub.package_type || 'normal',
+      package_id: sub.package_id,
       employee_limit: sub.employee_limit ?? '',
       subscription_type: sub.subscription_type || 'monthly',
       amount_paid: sub.amount_paid ?? '',
@@ -288,7 +296,7 @@ const Subscriptions = () => {
       payload.employee_limit = parseInt(derivedEmployeeLimit) || parseInt(formData.employee_limit) || 0;
       payload.amount_paid = parseFloat(derivedAmountPaid) || parseFloat(formData.amount_paid) || 0;
       payload.company_id = parseInt(payload.company_id);
-      payload.subscription_package_id = parseInt(payload.subscription_package_id);
+      payload.package_id = parseInt(payload.package_id);
 
       if (payload.starts_at) payload.starts_at = new Date(payload.starts_at).toISOString();
       if (payload.expires_at) payload.expires_at = new Date(payload.expires_at).toISOString();
@@ -327,6 +335,8 @@ const Subscriptions = () => {
   // react-select option arrays
   const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
   const packageOptions = packagesList.map((p) => ({ value: p.id, label: p.name }));
+  const customPackageOptions = customPackagesList.map((p) => ({ value: p.id, label: `${p.name} (${p.client_name || 'ID: ' + p.client_id})` }));
+  const currentPackageOptions = formData.package_type === 'custom' ? customPackageOptions : packageOptions;
 
   // Allowed billing periods for the selected package (only those in accept_periods)
   const allowedBillingOptions = selectedPackage
@@ -637,20 +647,45 @@ const Subscriptions = () => {
               />
             </div>
 
+            {/* Package Type */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Package Type</label>
+              <SelectField
+                options={[
+                  { value: 'normal', label: 'Normal' },
+                  { value: 'custom', label: 'Custom' }
+                ]}
+                value={
+                  [
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'custom', label: 'Custom' }
+                  ].find((o) => o.value === formData.package_type) || { value: 'normal', label: 'Normal' }
+                }
+                onChange={(opt) => {
+                  setFormData({
+                    ...formData,
+                    package_type: opt ? opt.value : 'normal',
+                    package_id: '' // reset selected package on type change
+                  });
+                }}
+                placeholder="Select package type"
+              />
+            </div>
+
             {/* Package */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Package</label>
               <SelectField
-                options={packageOptions}
-                value={packageOptions.find((o) => String(o.value) === String(formData.subscription_package_id)) || null}
+                options={currentPackageOptions}
+                value={currentPackageOptions.find((o) => String(o.value) === String(formData.package_id)) || null}
                 onChange={(opt) => {
                   const newPkgId = opt ? opt.value : '';
                   // When package changes, reset billing type to first allowed period of new package
-                  const newPkg = packagesList.find((p) => String(p.id) === String(newPkgId));
+                  const newPkg = currentPackages.find((p) => String(p.id) === String(newPkgId));
                   const firstPeriod = newPkg?.accept_periods?.[0] || 'monthly';
                   setFormData({
                     ...formData,
-                    subscription_package_id: newPkgId,
+                    package_id: newPkgId,
                     subscription_type: firstPeriod,
                   });
                 }}
