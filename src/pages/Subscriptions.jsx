@@ -5,6 +5,7 @@ import ManagementTable from '../components/common/ManagementTable';
 import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import SelectField from '../components/common/SelectField';
+import AsyncSelectField from '../components/common/AsyncSelectField';
 import AdvancedDateFilter from '../components/common/AdvancedDateFilter';
 import { toast } from 'react-hot-toast';
 import Pagination from '../components/common/PaginationComponent';
@@ -81,17 +82,12 @@ const readonlyClass =
 
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [packagesList, setPackagesList] = useState([]);
-  const [customPackagesList, setCustomPackagesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const isFetchingRef = useRef(false);
-  const dependenciesLoadedRef = useRef(false);
-  const isFetchingDepsRef = useRef(false);
 
   // Modal state
   const [selectedSub, setSelectedSub] = useState(null);
@@ -110,10 +106,7 @@ const Subscriptions = () => {
   const [isNotifying, setIsNotifying] = useState(false);
 
   // ─── Derived: selected package object ────────────────────────────────────
-  const currentPackages = formData.package_type === 'custom' ? customPackagesList : packagesList;
-  const selectedPackage = currentPackages.find(
-    (p) => String(p.id) === String(formData.package_id)
-  ) || null;
+  const [selectedPackage, setSelectedPackage] = useState(null);
 
   // Auto-derive employee_limit and amount_paid from package + billing period
   const derivedEmployeeLimit = selectedPackage
@@ -148,53 +141,12 @@ const Subscriptions = () => {
     }
   };
 
-  const fetchDependencies = async () => {
-    if (isFetchingDepsRef.current) return;
-    isFetchingDepsRef.current = true;
-    try {
-      const [compRes, packRes, customPackRes] = await Promise.all([
-        apiCall('/companies'),
-        apiCall('/packages'),
-        apiCall('/custom-packages')
-      ]);
-      const compData = await compRes.json();
-      const packData = await packRes.json();
-      const customPackData = await customPackRes.json();
-      
-      if (compData.success) setCompanies(compData.data || []);
-      if (packData.success) setPackagesList(packData.data || []);
-      if (customPackData.success) setCustomPackagesList(customPackData.data || []);
-      dependenciesLoadedRef.current = true;
-    } catch (error) {
-      console.error('Error fetching dependencies', error);
-    } finally {
-      isFetchingDepsRef.current = false;
-    }
-  };
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchSubscriptions();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [page, limit, searchTerm]);
-
-  // Lazily load companies + packages only when the form modal needs them
-  const ensureDependenciesLoaded = async () => {
-    if (dependenciesLoadedRef.current || isFetchingDepsRef.current) return;
-    await fetchDependencies();
-  };
-
   // ─── Modal handlers ───────────────────────────────────────────────────────
   const handleOpenCreate = async () => {
     setSelectedSub(null);
     setFormData(initialFormData);
+    setSelectedPackage(null);
     setIsFormModalOpen(true);
-    await ensureDependenciesLoaded();
   };
 
   const handleOpenEdit = async (sub) => {
@@ -215,8 +167,8 @@ const Subscriptions = () => {
       payment_status: sub.payment_status || 'pending',
       is_active: sub.is_active ? 1 : 0
     });
+    setSelectedPackage(null); // Wait for user to interact, or assume existing fields are fine
     setIsFormModalOpen(true);
-    await ensureDependenciesLoaded();
   };
 
   const handleDeleteClick = (id) => {
@@ -331,12 +283,6 @@ const Subscriptions = () => {
       default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
     }
   };
-
-  // react-select option arrays
-  const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
-  const packageOptions = packagesList.map((p) => ({ value: p.id, label: p.name }));
-  const customPackageOptions = customPackagesList.map((p) => ({ value: p.id, label: `${p.name} (${p.client_name || 'ID: ' + p.client_id})` }));
-  const currentPackageOptions = formData.package_type === 'custom' ? customPackageOptions : packageOptions;
 
   // Allowed billing periods for the selected package (only those in accept_periods)
   const allowedBillingOptions = selectedPackage
@@ -638,12 +584,20 @@ const Subscriptions = () => {
             {/* Company */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Company</label>
-              <SelectField
-                options={companyOptions}
-                value={companyOptions.find((o) => String(o.value) === String(formData.company_id)) || null}
-                onChange={(opt) => setFormData({ ...formData, company_id: opt ? opt.value : '' })}
-                placeholder="Select a company"
-                isClearable
+              <AsyncSelectField
+                fetchUrl="/companies"
+                valueKey="id"
+                labelKey="name"
+                formatOptionLabel={(option) => (
+                  <div className="flex flex-col">
+                    <span className="font-medium">{option.name}</span>
+                    <span className="text-xs text-gray-500">{option.legal_name || 'ID: ' + option.id}</span>
+                  </div>
+                )}
+                value={formData.company_id}
+                defaultOption={selectedSub ? { value: selectedSub.company_id, label: selectedSub.company_name, name: selectedSub.company_name } : null}
+                onChange={(val) => setFormData({ ...formData, company_id: val || '' })}
+                placeholder="Search company by name..."
               />
             </div>
 
@@ -667,6 +621,7 @@ const Subscriptions = () => {
                     package_type: opt ? opt.value : 'normal',
                     package_id: '' // reset selected package on type change
                   });
+                  setSelectedPackage(null);
                 }}
                 placeholder="Select package type"
               />
@@ -675,22 +630,33 @@ const Subscriptions = () => {
             {/* Package */}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Package</label>
-              <SelectField
-                options={currentPackageOptions}
-                value={currentPackageOptions.find((o) => String(o.value) === String(formData.package_id)) || null}
-                onChange={(opt) => {
-                  const newPkgId = opt ? opt.value : '';
-                  // When package changes, reset billing type to first allowed period of new package
-                  const newPkg = currentPackages.find((p) => String(p.id) === String(newPkgId));
-                  const firstPeriod = newPkg?.accept_periods?.[0] || 'monthly';
+              <AsyncSelectField
+                key={formData.package_type} // re-mount when type changes to reset options
+                fetchUrl={formData.package_type === 'custom' ? '/custom-packages' : '/packages'}
+                valueKey="id"
+                labelKey="name"
+                formatOptionLabel={(option) => (
+                  <div className="flex flex-col">
+                    <span className="font-medium">{option.name}</span>
+                    <span className="text-xs text-gray-500">
+                      {formData.package_type === 'custom' && option.client_name ? `For ${option.client_name}` : `Max ${option.max_employee_count} employees`}
+                    </span>
+                  </div>
+                )}
+                value={formData.package_id}
+                defaultOption={selectedSub ? { value: selectedSub.package_id, label: selectedSub.package_name, name: selectedSub.package_name } : null}
+                onChange={(val, selectedOpt) => {
+                  const newPkgId = val || '';
+                  const firstPeriod = selectedOpt?.accept_periods?.[0] || 'monthly';
+                  
+                  setSelectedPackage(selectedOpt || null);
                   setFormData({
                     ...formData,
                     package_id: newPkgId,
                     subscription_type: firstPeriod,
                   });
                 }}
-                placeholder="Select a package"
-                isClearable
+                placeholder="Search package..."
               />
             </div>
 

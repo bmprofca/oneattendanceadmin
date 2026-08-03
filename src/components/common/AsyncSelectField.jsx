@@ -32,6 +32,7 @@ const AsyncSelectField = ({
   styles,
   placeholder = "Search...",
   value,
+  defaultOption,
   onChange,
   ...props
 }) => {
@@ -53,7 +54,13 @@ const AsyncSelectField = ({
   const fetchController = useRef(null);
   // Keeps the last selected full option object so the label always shows correctly
   // even when the options list is replaced (search, pagination reset, etc.)
-  const lastSelectedRef = useRef(null);
+  const lastSelectedRef = useRef(defaultOption || null);
+
+  useEffect(() => {
+    if (defaultOption && !lastSelectedRef.current) {
+      lastSelectedRef.current = defaultOption;
+    }
+  }, [defaultOption]);
 
   const loadOptions = useCallback(async (pageNum, searchQuery, isNewSearch = false) => {
     if (fetchController.current) {

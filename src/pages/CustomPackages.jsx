@@ -6,6 +6,7 @@ import Modal from '../components/common/Modal';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
 import Pagination from '../components/common/PaginationComponent';
+import AsyncSelectField from '../components/common/AsyncSelectField';
 
 const initialFormData = {
   client_id: '',
@@ -126,7 +127,7 @@ const CustomPackages = () => {
     try {
       const payload = { ...pkg, is_active: pkg.is_active ? 0 : 1 };
       // we need to remove some fields that shouldn't be sent or might cause issues, but based on API schema we can send full body for PUT
-      const response = await apiCall(`/custom-packages/${pkg.id}/status`, 'PUT', {
+      const response = await apiCall(`/custom-packages/${pkg.id}/status`, 'PATCH', {
         is_active: payload.is_active
       });
       const data = await response.json();
@@ -226,7 +227,7 @@ const CustomPackages = () => {
       label: 'Monthly Price',
       render: (row) => (
         <div className="font-semibold text-gray-900 dark:text-white">
-          â‚¹{row.monthly_price}
+          {row.monthly_price}
         </div>
       )
     },
@@ -362,7 +363,7 @@ const CustomPackages = () => {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">â‚¹{selectedPackage.monthly_price}</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white"> {selectedPackage.monthly_price}</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">per month</div>
               </div>
             </div>
@@ -386,19 +387,19 @@ const CustomPackages = () => {
               <div className="grid grid-cols-2 gap-y-4 gap-x-6">
                 <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Monthly</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">â‚¹{selectedPackage.monthly_price}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white"> {selectedPackage.monthly_price}</span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Quarterly</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">â‚¹{selectedPackage.quarterly_price}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white"> {selectedPackage.quarterly_price}</span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Half-Yearly</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">â‚¹{selectedPackage.half_yearly_price}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white"> {selectedPackage.half_yearly_price}</span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Yearly</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">â‚¹{selectedPackage.yearly_price}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white"> {selectedPackage.yearly_price}</span>
                 </div>
               </div>
             </div>
@@ -455,14 +456,20 @@ const CustomPackages = () => {
         <form id="package-form" onSubmit={handleFormSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
-              <input
-                type="number"
-                required
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Client</label>
+              <AsyncSelectField
+                fetchUrl="/users"
+                valueKey="id"
+                labelKey="name"
+                formatOptionLabel={(option) => (
+                  <div className="flex flex-col">
+                    <span className="font-medium">{option.name}</span>
+                    <span className="text-xs text-gray-500">{option.email} • ID: {option.id}</span>
+                  </div>
+                )}
                 value={formData.client_id}
-                onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                placeholder="e.g. 10"
+                onChange={(val) => setFormData({ ...formData, client_id: val || '' })}
+                placeholder="Search by name, email or ID..."
               />
             </div>
 
