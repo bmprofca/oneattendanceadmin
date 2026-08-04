@@ -6,6 +6,7 @@ import {
   BarChart3, MoreVertical, ArrowUp, ArrowDown, RefreshCw,
   PieChart, LineChart, ChevronRight, Plus, Star
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import apiCall from '../utils/apiCall';
 import RefreshButton from '../components/common/RefreshButton';
 import { toast } from 'react-hot-toast';
@@ -138,7 +139,6 @@ const Dashboard = () => {
 
   const kpis = data.kpis;
 
-  // Quick stats for the top bar
   const quickStats = [
     { label: 'Users', value: kpis.total_users, icon: Users, change: '+12%', up: true },
     { label: 'Companies', value: kpis.total_companies, icon: Building2, change: '+5%', up: true },
@@ -146,7 +146,6 @@ const Dashboard = () => {
     { label: 'Active Now', value: '0', icon: Activity, change: '+8%', up: true },
   ];
 
-  // Prepare activity data
   const activities = [
     ...(data.recent_users || []).map(u => ({
       type: 'user',
@@ -185,10 +184,24 @@ const Dashboard = () => {
     return `${days}d ago`;
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } }
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants} className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Welcome back, Admin 👋
@@ -294,10 +307,9 @@ const Dashboard = () => {
 
           <RefreshButton onClick={fetchDashboard} loading={loading} />
         </div>
-      </div>
+      </motion.div>
 
-      {/* Quick Stats Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {quickStats.map((stat, index) => (
           <div
             key={index}
@@ -320,14 +332,11 @@ const Dashboard = () => {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stat.label}</p>
           </div>
         ))}
-      </div>
+      </motion.div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Main Stats & Charts */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Stats Overview */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+          <motion.div variants={itemVariants} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Platform Overview</h2>
               <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -335,7 +344,6 @@ const Dashboard = () => {
               </button>
             </div>
             
-            {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
                 { label: 'Total Employees', value: kpis.total_employees, icon: Users, color: 'blue' },
@@ -353,7 +361,6 @@ const Dashboard = () => {
               ))}
             </div>
 
-            {/* Progress Bars */}
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between mb-2">
@@ -392,11 +399,9 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* HR & Finance Quick View */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* HR Section */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900 dark:text-white">HR Management</h3>
@@ -421,7 +426,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Finance Section */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Finance Overview</h3>
@@ -445,12 +449,10 @@ const Dashboard = () => {
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Right Column - Activity & Quick Actions */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
+        <motion.div variants={itemVariants} className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
             <div className="space-y-2">
@@ -538,9 +540,9 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

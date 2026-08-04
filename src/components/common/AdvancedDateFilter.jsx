@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import {
   FaCalendarAlt, FaTimes, FaCheck, FaUndo, FaChevronLeft, FaChevronRight,
 } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
 import SelectField from "./SelectField";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -530,26 +531,34 @@ export default function AdvancedDateFilter({
       </div>
 
       {/* Modal Portal */}
-      {isOpen && createPortal(
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
-            style={{ animation: "fadeIn 0.2s ease-out" }}
-            onClick={() => setIsOpen(false)}
-          />
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+                onClick={() => setIsOpen(false)}
+              />
 
-          {/* Popover */}
-          <div
-            ref={popoverRef}
-            data-advanced-date-filter="true"
-            className="relative z-[10002]"
-            style={{
-              width: window.innerWidth < 640 ? "90%" : "100%",
-              maxWidth: "22rem",
-              animation: "zoomIn 0.2s ease-out",
-            }}
-          >
+              {/* Popover */}
+              <motion.div
+                ref={popoverRef}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                data-advanced-date-filter="true"
+                className="relative z-[10002]"
+                style={{
+                  width: window.innerWidth < 640 ? "90%" : "100%",
+                  maxWidth: "22rem"
+                }}
+              >
             {/* Close button */}
             <button
               type="button"
@@ -656,8 +665,10 @@ export default function AdvancedDateFilter({
                 </button>
               </div>
             </div>
-          </div>
-        </div>,
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
         document.body
       )}
     </div>

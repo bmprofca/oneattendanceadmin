@@ -1,5 +1,6 @@
-import Select from "react-select";
+import Select, { components } from "react-select";
 import { useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getReactSelectMenuProps, getReactSelectStyles } from "../../hooks/reactSelectConfig";
 
@@ -22,7 +23,24 @@ const mergeSelectStyles = (baseStyles, styles = {}, theme = 'light') => {
   return merged;
 };
 
-const SelectField = ({ styles, ...props }) => {
+const AnimatedMenu = (props) => {
+  return (
+    <components.Menu {...props}>
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, y: -4, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+        >
+          {props.children}
+        </motion.div>
+      </AnimatePresence>
+    </components.Menu>
+  );
+};
+
+const SelectField = ({ styles, components: customComponents, ...props }) => {
   const { theme } = useTheme();
   const mergedStyles = useMemo(
     () => mergeSelectStyles(getReactSelectStyles(theme), styles, theme),
@@ -34,6 +52,7 @@ const SelectField = ({ styles, ...props }) => {
       key={theme}
       {...getReactSelectMenuProps()}
       {...props}
+      components={{ Menu: AnimatedMenu, ...customComponents }}
       styles={mergedStyles}
     />
   );
