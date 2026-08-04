@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
+import { API_BASE } from "../../utils/config";
 
 const Navbar = ({
   toggleSidebar,
@@ -31,6 +32,13 @@ const Navbar = ({
   };
 
   const isSidebarOpen = isMobile ? sidebarOpen : isDesktopSidebarExpanded;
+
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const baseUrl = API_BASE.replace(/\/admin\/?$/, '');
+    return `${baseUrl}${path}`;
+  };
 
   return (
     <>
@@ -105,9 +113,17 @@ const Navbar = ({
                   {/* Avatar */}
                   <div className="relative">
                     <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shadow-md bg-gradient-to-br from-blue-500 to-indigo-600">
-                      <span className="text-white font-bold text-sm">
-                        {user?.username?.[0]?.toUpperCase() || "A"}
-                      </span>
+                      {user?.profile_picture ? (
+                        <img 
+                          src={getImageUrl(user.profile_picture)} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white font-bold text-sm">
+                          {user?.name?.[0]?.toUpperCase() || "A"}
+                        </span>
+                      )}
                     </div>
                     {/* Online dot */}
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-400 border-2 border-white dark:border-gray-900 rounded-full"></div>
@@ -115,12 +131,10 @@ const Navbar = ({
 
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                      {user?.first_name
-                        ? `${user.first_name} ${user.last_name || ""}`
-                        : user?.username || "Admin"}
+                      {user?.name || "Admin"}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                      {user?.user_type || "Administrator"}
+                      {user?.is_system_admin ? "System Administrator" : "Administrator"}
                     </p>
                   </div>
 
@@ -137,19 +151,25 @@ const Navbar = ({
                     <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-950/50 border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
                       {/* Mobile user info */}
                       <div className="md:hidden p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                          <span className="text-white font-bold">
-                            {user?.username?.[0]?.toUpperCase() || "A"}
-                          </span>
+                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                          {user?.profile_picture ? (
+                            <img 
+                              src={getImageUrl(user.profile_picture)} 
+                              alt="Profile" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white font-bold">
+                              {user?.name?.[0]?.toUpperCase() || "A"}
+                            </span>
+                          )}
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800 dark:text-gray-100">
-                            {user?.first_name
-                              ? `${user.first_name} ${user.last_name || ""}`
-                              : user?.username || "Admin"}
+                            {user?.name || "Admin"}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                            {user?.user_type || "Administrator"}
+                            {user?.is_system_admin ? "System Administrator" : "Administrator"}
                           </p>
                         </div>
                       </div>

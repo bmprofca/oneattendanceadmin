@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import {
   FaCalendarAlt, FaTimes, FaCheck, FaUndo, FaChevronLeft, FaChevronRight,
 } from "react-icons/fa";
+import SelectField from "./SelectField";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -103,9 +104,15 @@ function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle
 
   const cells = [];
   for (let i = 0; i < firstDay; i++) {
+    const dayNum = prevMonthDays - firstDay + i + 1;
     cells.push(
-      <div key={`p${i}`} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs text-gray-300 dark:text-gray-600">
-        {prevMonthDays - firstDay + i + 1}
+      <div
+        key={`p${i}`}
+        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs text-gray-300 dark:text-gray-600 cursor-pointer hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
+        onClick={() => onViewChange(new Date(y, m - 1, 1))}
+        title="Go to previous month"
+      >
+        {dayNum}
       </div>
     );
   }
@@ -133,26 +140,67 @@ function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle
   const remaining = 42 - firstDay - daysInMonth;
   for (let d = 1; d <= remaining && d <= 7; d++) {
     cells.push(
-      <div key={`n${d}`} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs text-gray-300 dark:text-gray-600">{d}</div>
+      <div
+        key={`n${d}`}
+        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs text-gray-300 dark:text-gray-600 cursor-pointer hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
+        onClick={() => onViewChange(new Date(y, m + 1, 1))}
+        title="Go to next month"
+      >
+        {d}
+      </div>
     );
   }
 
   return (
     <div>
       {/* Month/Year Nav */}
-      <div className="flex items-center justify-between mb-2.5 gap-1.5">
+      <div className="flex items-center justify-between mb-2 gap-1 px-1">
         <button
           onClick={() => onViewChange(new Date(y, m - 1, 1))}
-          className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors flex-shrink-0 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           ‹
         </button>
-        <span className="text-[11px] sm:text-xs font-medium text-gray-800 dark:text-gray-200 text-center flex-1 min-w-0 truncate">
-          {MONTHS_FULL[m]} {y}
-        </span>
+        <div className="flex gap-1 flex-1 justify-center items-center">
+          <div style={{ minWidth: 110 }}>
+            <SelectField
+              options={MONTHS_FULL.map((monthName, idx) => ({ value: idx, label: monthName }))}
+              value={{ value: m, label: MONTHS_FULL[m] }}
+              onChange={(opt) => onViewChange(new Date(y, opt.value, 1))}
+              isSearchable={false}
+              menuPortalTarget={null}
+              menuPosition="absolute"
+              styles={{
+                control: (base) => ({ ...base, minHeight: '28px', height: '28px', fontSize: '12px', cursor: 'pointer' }),
+                valueContainer: (base) => ({ ...base, padding: '0 6px' }),
+                dropdownIndicator: (base) => ({ ...base, padding: '2px 4px' }),
+                singleValue: (base) => ({ ...base, fontSize: '12px', fontWeight: 600 }),
+              }}
+            />
+          </div>
+          <div style={{ minWidth: 72 }}>
+            <SelectField
+              options={Array.from({ length: 20 }, (_, i) => {
+                const yearVal = new Date().getFullYear() - 10 + i;
+                return { value: yearVal, label: String(yearVal) };
+              })}
+              value={{ value: y, label: String(y) }}
+              onChange={(opt) => onViewChange(new Date(opt.value, m, 1))}
+              isSearchable={false}
+              menuPortalTarget={null}
+              menuPosition="absolute"
+              styles={{
+                control: (base) => ({ ...base, minHeight: '28px', height: '28px', fontSize: '12px', cursor: 'pointer' }),
+                valueContainer: (base) => ({ ...base, padding: '0 6px' }),
+                dropdownIndicator: (base) => ({ ...base, padding: '2px 4px' }),
+                singleValue: (base) => ({ ...base, fontSize: '12px', fontWeight: 600 }),
+              }}
+            />
+          </div>
+        </div>
         <button
           onClick={() => onViewChange(new Date(y, m + 1, 1))}
-          className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors flex-shrink-0 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           ›
         </button>
