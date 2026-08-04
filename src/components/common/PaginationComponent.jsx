@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import SelectField from './SelectField';
+import { motion } from 'framer-motion';
+
+const PageButton = ({ onClick, disabled, title, children }) => (
+  <motion.button
+    onClick={onClick}
+    disabled={disabled}
+    title={title}
+    whileHover={disabled ? undefined : { scale: 1.08 }}
+    whileTap={disabled ? undefined : { scale: 0.93 }}
+    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+    className="p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+  >
+    {children}
+  </motion.button>
+);
 
 const Pagination = ({
     currentPage,
@@ -29,7 +44,12 @@ const Pagination = ({
     };
 
     return (
-        <div className={`p-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50 ${className}`}>
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className={`p-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50 ${className}`}
+        >
             {showInfo && (
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <span>
@@ -41,7 +61,7 @@ const Pagination = ({
                             value={{ value: itemsPerPage, label: String(itemsPerPage) }}
                             onChange={(selectedOption) => {
                                 onLimitChange(Number(selectedOption.value));
-                                onPageChange(1); // Reset to page 1 on limit change
+                                onPageChange(1);
                             }}
                             options={availableLimits.map(limit => ({ value: limit, label: String(limit) }))}
                             menuPlacement="auto"
@@ -73,49 +93,35 @@ const Pagination = ({
             )}
             
             <div className="flex items-center gap-1">
-                <button 
-                    onClick={() => onPageChange(1)} 
-                    disabled={currentPage === 1}
-                    className="p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    title="First Page"
-                >
+                <PageButton onClick={() => onPageChange(1)} disabled={currentPage === 1} title="First Page">
                     <ChevronsLeft className="w-4 h-4" />
-                </button>
-                <button 
-                    onClick={() => onPageChange(currentPage - 1)} 
-                    disabled={currentPage === 1}
-                    className="p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    title="Previous Page"
-                >
+                </PageButton>
+                <PageButton onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} title="Previous Page">
                     <ChevronLeft className="w-4 h-4" />
-                </button>
+                </PageButton>
                 
                 <div className="flex items-center gap-2 mx-2">
                     <span className="hidden sm:inline">Page</span>
-                    <span className="font-medium px-2 py-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md">
+                    <motion.span
+                      key={currentPage}
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className="font-medium px-2 py-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md"
+                    >
                         {currentPage}
-                    </span>
+                    </motion.span>
                     <span>of {totalPages}</span>
                 </div>
                 
-                <button 
-                    onClick={() => onPageChange(currentPage + 1)} 
-                    disabled={currentPage === totalPages}
-                    className="p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    title="Next Page"
-                >
+                <PageButton onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} title="Next Page">
                     <ChevronRight className="w-4 h-4" />
-                </button>
-                <button 
-                    onClick={() => onPageChange(totalPages)} 
-                    disabled={currentPage === totalPages}
-                    className="p-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    title="Last Page"
-                >
+                </PageButton>
+                <PageButton onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} title="Last Page">
                     <ChevronsRight className="w-4 h-4" />
-                </button>
+                </PageButton>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

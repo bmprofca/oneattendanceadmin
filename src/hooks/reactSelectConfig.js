@@ -16,105 +16,107 @@ export const getReactSelectStyles = (theme = 'light') => {
   };
 
   return {
-  control: (provided, state) => {
-    return {
-      ...provided,
-      backgroundColor: colors.controlBg,
-      borderColor: state.isFocused ? '#6366f1' : colors.controlBorder,
-      borderRadius: '0.5rem',
-      boxShadow: state.isFocused ? '0 0 0 4px rgba(99, 102, 241, 0.12)' : 'none',
-      '&:hover': {
-        borderColor: state.isFocused ? '#6366f1' : colors.controlBorderHover,
-      },
-      minHeight: '42px',
-      fontSize: '0.875rem',
-      transition: 'border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease',
-    };
-  },
-  option: (provided, state) => {
-    return {
-      ...provided,
-      backgroundColor: state.isSelected 
-        ? colors.optionSelected
-        : state.isFocused 
-          ? colors.optionFocused
-          : colors.menuBg,
-      color: state.isSelected ? '#ffffff' : colors.optionText,
-      cursor: 'pointer',
-      fontSize: '0.875rem',
-      fontWeight: state.isSelected ? 600 : 500,
-      '&:active': {
-        backgroundColor: state.isSelected ? colors.optionSelected : colors.optionFocused,
-      }
-    };
-  },
-  menu: (provided) => {
-    return {
-      ...provided,
-      backgroundColor: colors.menuBg,
-      borderRadius: '0.5rem',
-      boxShadow: isDark
-        ? '0 18px 40px rgba(0, 0, 0, 0.45)'
-        : '0 18px 40px rgba(15, 23, 42, 0.14)',
-      zIndex: 9999,
-      border: `1px solid ${colors.menuBorder}`,
-      overflow: 'hidden',
-    };
-  },
-  menuPortal: base => ({ ...base, zIndex: 9999 }),
-  singleValue: (provided) => {
-    return {
+    control: (provided, state) => {
+      return {
+        ...provided,
+        backgroundColor: colors.controlBg,
+        borderColor: state.isFocused ? '#6366f1' : colors.controlBorder,
+        borderRadius: '0.5rem',
+        boxShadow: state.isFocused ? '0 0 0 4px rgba(99, 102, 241, 0.12)' : 'none',
+        '&:hover': {
+          borderColor: state.isFocused ? '#6366f1' : colors.controlBorderHover,
+        },
+        minHeight: '42px',
+        fontSize: '0.875rem',
+        transition: 'border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease',
+      };
+    },
+    option: (provided, state) => {
+      return {
+        ...provided,
+        backgroundColor: state.isSelected
+          ? colors.optionSelected
+          : state.isFocused
+            ? colors.optionFocused
+            : colors.menuBg,
+        color: state.isSelected ? '#ffffff' : colors.optionText,
+        cursor: 'pointer',
+        fontSize: '0.875rem',
+        fontWeight: state.isSelected ? 600 : 500,
+        '&:active': {
+          backgroundColor: state.isSelected ? colors.optionSelected : colors.optionFocused,
+        }
+      };
+    },
+    menu: (provided) => {
+      return {
+        ...provided,
+        backgroundColor: colors.menuBg,
+        borderRadius: '0.5rem',
+        boxShadow: isDark
+          ? '0 18px 40px rgba(0, 0, 0, 0.45)'
+          : '0 18px 40px rgba(15, 23, 42, 0.14)',
+        zIndex: 9999,
+        border: `1px solid ${colors.menuBorder}`,
+        overflow: 'hidden',
+      };
+    },
+    menuPortal: base => ({ ...base, zIndex: 9999 }),
+    singleValue: (provided) => {
+      return {
+        ...provided,
+        color: 'gray',
+        fontWeight: 600,
+        fontSize: '0.875rem'
+      };
+    },
+    input: (provided) => ({
       ...provided,
       color: colors.controlText,
-      fontSize: '0.875rem'
-    };
-  },
-  input: (provided) => ({
-    ...provided,
-    color: colors.controlText,
-  }),
-  placeholder: (provided) => ({
-    ...provided,
-    color: colors.placeholder,
-  }),
-  multiValue: (provided) => ({
-    ...provided,
-    backgroundColor: colors.multiBg,
-    borderRadius: '0.5rem',
-  }),
-  multiValueLabel: (provided) => ({
-    ...provided,
-    color: colors.multiText,
-    fontWeight: 600,
-  }),
-  valueContainer: (provided) => ({
-    ...provided,
-    padding: '2px 10px'
-  }),
-  indicatorSeparator: () => ({
-    display: 'none'
-  }),
-  dropdownIndicator: (provided) => {
-    return {
+    }),
+    placeholder: (provided) => ({
       ...provided,
-      color: colors.placeholder,
-      padding: '4px 8px',
-      '&:hover': {
-        color: isDark ? '#d1d5db' : '#475569',
-      }
-    };
-  },
-  clearIndicator: (provided) => {
-    return {
+      color: 'gray',
+      fontWeight: 600,
+    }),
+    multiValue: (provided) => ({
       ...provided,
-      color: colors.placeholder,
-      padding: '4px 8px',
-      '&:hover': {
-        color: isDark ? '#f3f4f6' : '#334155',
-      }
-    };
-  }
-};
+      backgroundColor: colors.multiBg,
+      borderRadius: '0.5rem',
+    }),
+    multiValueLabel: (provided) => ({
+      ...provided,
+      color: colors.multiText,
+      fontWeight: 600,
+    }),
+    valueContainer: (provided) => ({
+      ...provided,
+      padding: '2px 10px'
+    }),
+    indicatorSeparator: () => ({
+      display: 'none'
+    }),
+    dropdownIndicator: (provided) => {
+      return {
+        ...provided,
+        color: colors.placeholder,
+        padding: '4px 8px',
+        '&:hover': {
+          color: isDark ? '#d1d5db' : '#475569',
+        }
+      };
+    },
+    clearIndicator: (provided) => {
+      return {
+        ...provided,
+        color: colors.placeholder,
+        padding: '4px 8px',
+        '&:hover': {
+          color: isDark ? '#f3f4f6' : '#334155',
+        }
+      };
+    }
+  };
 };
 
 export const reactSelectStyles = getReactSelectStyles();

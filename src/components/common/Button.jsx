@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+
 const Button = ({ 
   children, 
   onClick, 
@@ -14,16 +16,19 @@ const Button = ({
   };
 
   return (
-    <button
+    <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      whileHover={disabled ? undefined : { scale: 1.02, y: -1 }}
+      whileTap={disabled ? undefined : { scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 
         ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} 
         ${className}`}
     >
       {children}
-    </button>
+    </motion.button>
   );
 };
 
