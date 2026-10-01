@@ -13,6 +13,8 @@ import Packages from './pages/Packages';
 import CustomPackages from './pages/CustomPackages';
 import AlertLogs from './pages/AlertLogs';
 import AlertConfig from './pages/AlertConfig';
+import SettingsPage from './pages/Settings';
+import WebsiteContent from './pages/WebsiteContent';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from 'react-hot-toast';
@@ -46,6 +48,8 @@ function App() {
               <Route path="subscriptions/alert-config" element={<AlertConfig />} />
               <Route path="packages" element={<Packages />} />
               <Route path="custom-packages" element={<CustomPackages />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="website" element={<WebsiteContent />} />
             </Route>
 
             {/* Catch all */}

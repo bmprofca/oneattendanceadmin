@@ -16,7 +16,8 @@ import {
   Banknote,
   Wallet,
   Package,
-  Gift
+  Gift,
+  FileText
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 
@@ -74,6 +75,16 @@ const Sidebar = ({
       icon: Gift,
       label: "Custom Packages",
       path: "/custom-packages",
+    },
+    {
+      icon: FileText,
+      label: "Website",
+      path: "/website",
+    },
+    {
+      icon: Settings,
+      label: "Settings",
+      path: "/settings",
     },
   ];
 
